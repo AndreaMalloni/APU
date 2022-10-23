@@ -1,0 +1,18 @@
+from pathlib import Path
+
+TILE_SIZE = 16
+
+D_WIDTH = TILE_SIZE*16
+D_HEIGHT = TILE_SIZE*9
+
+IDLE = 0
+NORTH = 1
+NORTH_EAST = 2
+EAST = 3
+SOUTH_EAST = 4
+SOUTH = 5
+SOUTH_WEST = 6
+WEST = 7
+NORTH_WEST = 8
+
+ASSETSPATH = f"{Path.cwd()}\\assets"
