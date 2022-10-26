@@ -1,6 +1,6 @@
 import pygame as pg
 from typing import Sequence
-from APU.core.constants import IDLE, NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST
+from APU.core.config import IDLE, NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST
 
 def getSurroundingObjects(object, horizontalDistance = 1, verticalDistance = 1, **kwargs: pg.sprite.Group):
         surroundingObjects = []

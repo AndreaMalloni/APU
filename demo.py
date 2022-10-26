@@ -1,6 +1,6 @@
 import pygame as pg
 from pathlib import Path
-from APU.core.constants import D_WIDTH, D_HEIGHT, ASSETSPATH, NORTH, EAST, SOUTH, WEST, IDLE
+from APU.core.config import D_WIDTH, D_HEIGHT, ASSETSPATH, NORTH, EAST, SOUTH, WEST, IDLE
 from APU.entityObject import EntityObject
 from APU.globalObjectGroup import GlobalObjectGroup
 from APU.core.spritesheet import Spritesheet, SpriteStripAnim

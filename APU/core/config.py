@@ -2,8 +2,8 @@ from pathlib import Path
 
 TILE_SIZE = 16
 
-D_WIDTH = TILE_SIZE*16
-D_HEIGHT = TILE_SIZE*9
+D_WIDTH = TILE_SIZE*16*4
+D_HEIGHT = TILE_SIZE*9*4
 
 IDLE = 0
 NORTH = 1

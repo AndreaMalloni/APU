@@ -1,5 +1,3 @@
-from typing import List
-from APU.core.constants import D_WIDTH, D_HEIGHT
 import pygame as pg
 
 class BaseSpriteObject(pg.sprite.Sprite):
@@ -7,6 +5,7 @@ class BaseSpriteObject(pg.sprite.Sprite):
         pg.sprite.Sprite.__init__(self)
         self.x = x
         self.y = y
+        self._defaultSpriteImage = defaultSpriteImage
         self.image = defaultSpriteImage
 
         if self.image is None:  self.width, self.height = 0, 0

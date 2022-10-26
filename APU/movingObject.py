@@ -1,4 +1,4 @@
-from APU.core.constants import IDLE, NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST
+from APU.core.config import IDLE, NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST
 from APU.core.animatedSpriteObject import AnimatedSpriteObject
 import pygame as pg
 
@@ -25,12 +25,10 @@ class MovingObject(AnimatedSpriteObject):
     def move(self, direction:int):
         self.isMoving = direction != IDLE
         self.movingDirection = direction
+        if direction != IDLE: self.facingDirection = direction
 
         self.x = self.movements[direction][0]()
         self.y = self.movements[direction][1]()
-
-    #def draw(self, window):
-        #pass
 
     def predictDirectionalCollision(self):
         #HINT check x & y axis individually
