@@ -25,5 +25,12 @@ def clockToSurfaceFPS(clock: pg.time.Clock, font) -> pg.Surface:
     fps = str(int(clock.get_fps()))
     return font.render(fps, 1, pg.Color("coral"))
 
+def clip(surf,x,y,x_size,y_size):
+    handle_surf = surf.copy()
+    clipR = pg.Rect(x,y,x_size,y_size)
+    handle_surf.set_clip(clipR)
+    image = surf.subsurface(handle_surf.get_clip())
+    return image.copy()
+
 if __name__ == "__main__":
     print("All imports working!")

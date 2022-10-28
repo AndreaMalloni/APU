@@ -4,17 +4,17 @@ from APU.core.config import D_WIDTH, D_HEIGHT, ASSETSPATH, NORTH, EAST, SOUTH, W
 from APU.entityObject import EntityObject
 from APU.globalObjectGroup import GlobalObjectGroup
 from APU.core.spritesheet import Spritesheet, SpriteStripAnim
-from APU.utility import getDirectionFromKeymap, clockToSurfaceFPS
+from APU.core.font import Font
+from APU.utility import getDirectionFromKeymap
 
 pg.init()
 
 clock = pg.time.Clock()
-font = pg.font.SysFont("Arial", 18)
-
 window = pg.display.set_mode((D_WIDTH, D_HEIGHT), pg.RESIZABLE)
 pg.display.set_caption("Shooter")
 
 run = True
+font = Font(f"{ASSETSPATH}\large_font.png", (0,0,0))
 blitSurface = pg.Surface((512, 288))
 
 player = EntityObject(
@@ -67,8 +67,8 @@ while run:
 
     blitSurface.fill((255,255,255))
     gameObjects.draw(blitSurface)
+    font.render(blitSurface, str(int(clock.get_fps())), (10, 0))
     window.blit(pg.transform.scale(blitSurface, (D_WIDTH, D_HEIGHT)), (0,0))
-    window.blit(clockToSurfaceFPS(clock, font), (10,0))
 
     gameObjects.update()     
     pg.display.update()
