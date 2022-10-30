@@ -1,6 +1,6 @@
-import pygame as pg
+import pygame as pg, time
 from typing import Sequence
-from APU.core.config import IDLE, NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST
+from APU.core.config import IDLE, NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST, DEFAULT_FPS
 
 def getSurroundingObjects(object, horizontalDistance = 1, verticalDistance = 1, **kwargs: pg.sprite.Group):
         surroundingObjects = []
@@ -25,12 +25,18 @@ def clockToSurfaceFPS(clock: pg.time.Clock, font) -> pg.Surface:
     fps = str(int(clock.get_fps()))
     return font.render(fps, 1, pg.Color("coral"))
 
-def clip(surf,x,y,x_size,y_size):
+def clip(surf, x, y, x_size, y_size):
     handle_surf = surf.copy()
     clipR = pg.Rect(x,y,x_size,y_size)
     handle_surf.set_clip(clipR)
     image = surf.subsurface(handle_surf.get_clip())
     return image.copy()
+
+def deltaT(last_time):
+    dt = time.time() - last_time
+    dt *= DEFAULT_FPS
+    updated_last_time = time.time()
+    return dt, updated_last_time
 
 if __name__ == "__main__":
     print("All imports working!")

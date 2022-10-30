@@ -5,7 +5,8 @@ from APU.entityObject import EntityObject
 from APU.globalObjectGroup import GlobalObjectGroup
 from APU.core.spritesheet import Spritesheet, SpriteStripAnim
 from APU.core.font import Font
-from APU.utility import getDirectionFromKeymap
+from APU.utility import getDirectionFromKeymap, deltaT
+import time
 
 pg.init()
 
@@ -14,6 +15,7 @@ window = pg.display.set_mode((D_WIDTH, D_HEIGHT), pg.RESIZABLE)
 pg.display.set_caption("Shooter")
 
 run = True
+last_time = time.time()
 font = Font(f"{ASSETSPATH}\large_font.png", (0,0,0))
 blitSurface = pg.Surface((512, 288))
 
@@ -29,9 +31,11 @@ player = EntityObject(
 
 gameObjects = GlobalObjectGroup()
 gameObjects.add(player)
+player.switchTo("idle_front")
 
 while run:
     clock.tick(60)
+    dt, last_time = deltaT(last_time)
 
     for event in pg.event.get():
         if event.type == pg.QUIT:
@@ -40,7 +44,7 @@ while run:
             D_WIDTH, D_HEIGHT = window.get_size()
 
     keys = pg.key.get_pressed()
-    player.move(getDirectionFromKeymap(keys))
+    player.move(getDirectionFromKeymap(keys), dt)
 
     if player.isMoving:
         if player.movingDirection == NORTH:
@@ -64,8 +68,7 @@ while run:
             player.switchTo("idle_left")
         '''
 
-
-    blitSurface.fill((255,255,255))
+    blitSurface.fill((0, 0, 0))
     gameObjects.draw(blitSurface)
     font.render(blitSurface, str(int(clock.get_fps())), (10, 0))
     window.blit(pg.transform.scale(blitSurface, (D_WIDTH, D_HEIGHT)), (0,0))

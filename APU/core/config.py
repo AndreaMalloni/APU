@@ -2,8 +2,8 @@ from pathlib import Path
 
 TILE_SIZE = 16
 
-D_WIDTH = TILE_SIZE*16*4
-D_HEIGHT = TILE_SIZE*9*4
+D_WIDTH = 1280
+D_HEIGHT = 720
 
 IDLE = 0
 NORTH = 1
@@ -15,4 +15,5 @@ SOUTH_WEST = 6
 WEST = 7
 NORTH_WEST = 8
 
+DEFAULT_FPS = 60
 ASSETSPATH = f"{Path.cwd()}\\assets"
