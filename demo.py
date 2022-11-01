@@ -16,13 +16,16 @@ pg.display.set_caption("Shooter")
 
 run = True
 last_time = time.time()
-font = Font(f"{ASSETSPATH}\large_font.png", (0,0,0))
+font = Font(f"{ASSETSPATH}\large_font.png", (0, 0, 0))
 blitSurface = pg.Surface((512, 288))
+
+enemy = EntityObject(200, 200)
 
 player = EntityObject(
     100, 
     100,
-    defaultSpriteImage = Spritesheet(f"{ASSETSPATH}\Sprite-0001.png").image_at((0, 0, 16, 16), (0, 0, 0)), 
+    defaultSpriteImage = Spritesheet(f"{ASSETSPATH}\Sprite-0001.png").image_at((0, 0, 16, 16), (0, 0, 0)),
+    defaultSeq = "idle_front",
     idle_front = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 0, 16, 16), 3, (0, 0, 0), True, 6),
     idle_back = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 16, 16, 16), 3, (0, 0, 0), True, 6),
     idle_right = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 32, 16, 16), 3, (0, 0, 0), True, 6),
@@ -30,8 +33,7 @@ player = EntityObject(
     )
 
 gameObjects = GlobalObjectGroup()
-gameObjects.add(player)
-player.switchTo("idle_front")
+gameObjects.add(player, enemy)
 
 while run:
     clock.tick(60)
