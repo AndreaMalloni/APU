@@ -23,11 +23,11 @@ class AnimatedSpriteObject(BaseSpriteObject):
 
         if kwargs: self.addAnimationSequence(**kwargs)
 
-    def addAnimationSequence(self, **kwargs:SpriteStripAnim):
+    def addAnimationSequence(self, **kwargs:SpriteStripAnim) -> None:
         """Updates the animations dict with any given animation sequence."""
         self.animations.update(**kwargs)
     
-    def switchTo(self, animationSeq:str):
+    def switchTo(self, animationSeq:str) -> None:
         """Changes the current playing animation and calls the corresponding iter()
         method to start frame iteration
 
@@ -43,7 +43,7 @@ class AnimatedSpriteObject(BaseSpriteObject):
         self.currentAnimationSequence = animationSeq
         self.animations[self.currentAnimationSequence].iter()
     
-    def draw(self, window:pg.display):
+    def draw(self, window:pg.display) -> None:
         """Draws the sprite image on the given (pygame) display in the current (x, y) position.\n
         Overrides the draw method of BasicSpriteObject to iterate through all the frames of the current playing sequence.
 
