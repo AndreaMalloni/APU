@@ -16,24 +16,25 @@ pg.display.set_caption("Shooter")
 
 run = True
 last_time = time.time()
-font = Font(f"{ASSETSPATH}\large_font.png", (0, 0, 0))
-blitSurface = pg.Surface((512, 288))
 
-enemy = EntityObject(200, 200)
+font = Font(f"{ASSETSPATH}\large_font.png")
+font.changeColor((255, 0, 0), (127, 127, 127))
+
+blitSurface = pg.Surface((512, 288))
 
 player = EntityObject(
     100, 
     100,
     defaultSpriteImage = Spritesheet(f"{ASSETSPATH}\Sprite-0001.png").image_at((0, 0, 16, 16), (0, 0, 0)),
-    defaultSeq = "idle_front",
     idle_front = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 0, 16, 16), 3, (0, 0, 0), True, 6),
     idle_back = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 16, 16, 16), 3, (0, 0, 0), True, 6),
     idle_right = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 32, 16, 16), 3, (0, 0, 0), True, 6),
-    idle_left = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 48, 16, 16), 3, (0, 0, 0), True, 6)
+    idle_left = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 48, 16, 16), 3, (0, 0, 0), True, 6),
+    defaultSeq = "idle_front"
     )
 
 gameObjects = GlobalObjectGroup()
-gameObjects.add(player, enemy)
+gameObjects.add(player)
 
 while run:
     clock.tick(60)
@@ -72,7 +73,7 @@ while run:
 
     blitSurface.fill((0, 0, 0))
     gameObjects.draw(blitSurface)
-    font.render(blitSurface, str(int(clock.get_fps())), (10, 0))
+    font.render(blitSurface, str(int(clock.get_fps())), (5, 5))
     window.blit(pg.transform.scale(blitSurface, (D_WIDTH, D_HEIGHT)), (0,0))
 
     gameObjects.update()     
