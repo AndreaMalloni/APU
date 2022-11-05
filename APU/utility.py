@@ -38,5 +38,12 @@ def deltaT(last_time):
     updated_last_time = time.time()
     return dt, updated_last_time
 
+def palette_swap(surf, old_c, new_c):
+    img_copy = pg.Surface(surf.get_size())
+    img_copy.fill(new_c)
+    surf.set_colorkey(old_c)
+    img_copy.blit(surf, (0, 0))
+    return img_copy
+
 if __name__ == "__main__":
     print("All imports working!")
