@@ -12,7 +12,7 @@ class BaseSpriteObject(pg.sprite.Sprite):
         Args:
             x (int): x position of the sprite.
             y (int): y position of the sprite.
-            defaultSpriteImage (pg.Surface, optional): the default image to draw. Defaults to pg.Surface((0, 0)) (empty surface).
+            defaultSpriteImage (pg.Surface, optional): default image to draw. Defaults to pg.Surface((0, 0)) (empty surface).
         """
         pg.sprite.Sprite.__init__(self)
         self.x = x
@@ -44,7 +44,7 @@ class BaseSpriteObject(pg.sprite.Sprite):
         """Draws the sprite image on the given (pygame) display in the current (x, y) position.
 
         Args:
-            window (pg.display): the display to draw the image to.
+            window (pg.display): display to draw the image to.
         """
         window.blit(self.image, self.position)
 

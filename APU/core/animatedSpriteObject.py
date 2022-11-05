@@ -15,7 +15,7 @@ class AnimatedSpriteObject(BaseSpriteObject):
             x (int): x position of the sprite.
             y (int): y position of the sprite.
             defaultSpriteImage (pg.Surface, optional): the default image to draw. Defaults to pg.Surface((0, 0)) (empty surface).
-            defaultSeq (str, optional): the default animation sequence to play. Defaults to None.
+            defaultSeq (str, optional): default animation sequence to play. Defaults to None.
         """
         super().__init__(x, y, defaultSpriteImage)
         self.animations = {}
@@ -48,7 +48,7 @@ class AnimatedSpriteObject(BaseSpriteObject):
         Overrides the draw method of BasicSpriteObject to iterate through all the frames of the current playing sequence.
 
         Args:
-            window (pg.display): the display to draw the image to.
+            window (pg.display): display to draw the image to.
         """
         try:
             self.image = self.animations[self.currentAnimationSequence].next()
