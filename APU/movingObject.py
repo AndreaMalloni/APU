@@ -1,4 +1,4 @@
-from APU.core.config import IDLE, NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST
+from APU.core.config import IDLE, NORTH, EAST, SOUTH, WEST
 from APU.core.animatedSpriteObject import AnimatedSpriteObject
 import pygame as pg
 
@@ -12,50 +12,31 @@ class MovingObject(AnimatedSpriteObject):
 
         self._movements = {
             NORTH: self._moveNorth,
-            NORTH_EAST: self._moveNorthEast,
             EAST: self._moveEast,
-            SOUTH_EAST: self._moveSouthEast,
             SOUTH: self._moveSouth,
-            SOUTH_WEST: self._moveSouthWest,
             WEST: self._moveWest,
-            NORTH_WEST: self._moveNorthWest,
         }
 
-    def move(self, direction:int, dt = 1):
-        self.isMoving = direction != IDLE
-        self.movingDirection = direction
+    def move(self, directions:list[int], dt = 1):
+        self.isMoving = IDLE not in directions
+        self.movingDirection = directions[0] if directions else IDLE
 
-        if direction != IDLE: 
-            self.facingDirection = direction
-            self._movements[direction](dt)
+        if IDLE not in directions: 
+            if directions: self.facingDirection = directions[0]
+            for direction in directions:
+                self._movements[direction](dt)
 
     def _moveNorth(self, dt):
-        self.y -= self.speed * dt
-
-    def _moveNorthEast(self, dt):
-        self.x += self.speed * dt
         self.y -= self.speed * dt
 
     def _moveEast(self, dt):
         self.x += self.speed * dt
 
-    def _moveSouthEast(self, dt):
-        self.x += self.speed * dt
-        self.y += self.speed * dt
-
     def _moveSouth(self, dt):
-        self.y += self.speed * dt
-
-    def _moveSouthWest(self, dt):
-        self.x -= self.speed * dt
         self.y += self.speed * dt
 
     def _moveWest(self, dt):
         self.x -= self.speed * dt
-
-    def _moveNorthWest(self, dt):
-       self.x -= self.speed * dt
-       self.y -= self.speed * dt
 
     def predictDirectionalCollision(self):
         #HINT check x & y axis individually
