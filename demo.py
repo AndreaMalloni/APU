@@ -1,6 +1,5 @@
 import pygame as pg
-from pathlib import Path
-from APU.core.config import D_WIDTH, D_HEIGHT, ASSETSPATH, NORTH, EAST, SOUTH, WEST, IDLE
+from APU.core.config import D_WIDTH, D_HEIGHT, ASSETSPATH, NORTH, EAST, SOUTH, WEST
 from APU.entityObject import EntityObject
 from APU.globalObjectGroup import GlobalObjectGroup
 from APU.core.spritesheet import Spritesheet, SpriteStripAnim
@@ -11,13 +10,14 @@ import time
 pg.init()
 
 clock = pg.time.Clock()
-window = pg.display.set_mode((D_WIDTH, D_HEIGHT), pg.RESIZABLE)
-pg.display.set_caption("Shooter")
+
+window = pg.display.set_mode((D_WIDTH, D_HEIGHT), flags = pg.SCALED | pg.RESIZABLE, vsync = 1)
+pg.display.set_caption("Demo")
 
 run = True
 last_time = time.time()
 
-font = Font(f"{ASSETSPATH}\large_font.png")
+font = Font(f"{ASSETSPATH}\large_font.png", (0, 0, 0))
 font.changeColor((255, 0, 0), (127, 127, 127))
 
 blitSurface = pg.Surface((512, 288))
@@ -26,10 +26,10 @@ player = EntityObject(
     100, 
     100,
     defaultSpriteImage = Spritesheet(f"{ASSETSPATH}\Sprite-0001.png").image_at((0, 0, 16, 16), (0, 0, 0)),
-    idle_front = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 0, 16, 16), 3, (0, 0, 0), True, 6),
-    idle_back = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 16, 16, 16), 3, (0, 0, 0), True, 6),
-    idle_right = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 32, 16, 16), 3, (0, 0, 0), True, 6),
-    idle_left = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 48, 16, 16), 3, (0, 0, 0), True, 6),
+    idle_front = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 0, 16, 16), 3, (0, 0, 0), True, 20),
+    idle_back = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 16, 16, 16), 3, (0, 0, 0), True, 20),
+    idle_right = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 32, 16, 16), 3, (0, 0, 0), True, 20),
+    idle_left = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 48, 16, 16), 3, (0, 0, 0), True, 20),
     defaultSeq = "idle_front"
     )
 
@@ -76,6 +76,6 @@ while run:
     font.render(blitSurface, str(int(clock.get_fps())), (5, 5))
     window.blit(pg.transform.scale(blitSurface, (D_WIDTH, D_HEIGHT)), (0,0))
 
-    gameObjects.update()     
+    gameObjects.update()
     pg.display.update()
 
