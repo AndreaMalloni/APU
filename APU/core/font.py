@@ -8,12 +8,12 @@ class Font():
     Represents a custom font object generated from a font image.
     Provides methods to render any kind of string and to change the font color.
     """
-    def __init__(self, path:str, colorkey:pg.Color = (0, 0, 0), spacing:int = 1, separatorRGBAColor:int = 127) -> None:
+    def __init__(self, path:str, colorkey:pg.Color = None, spacing:int = 1, separatorRGBAColor:int = 127) -> None:
         """Constructs a custom font object
 
         Args:
             path (str): font image path
-            colorkey (pg.Color, optional): background color, transparency is applied. Defaults to (0, 0, 0) [black].
+            colorkey (pg.Color, optional): background color, transparency is applied. Defaults to None.
             spacing (int, optional): pixels of distance between characters in rendered strings. Defaults to 1.
             separatorRGBAColor (int, optional): color value of the separators in font image. Defaults to 127 [grey].
 
@@ -36,7 +36,7 @@ class Font():
         self.characters = {}
         
         fontImg = pg.image.load(path).convert()
-        fontImg.set_colorkey(self.colorkey)
+        if self.colorkey is not None: fontImg.set_colorkey(self.colorkey)
 
         self.__splitFontImg(fontImg, separatorRGBAColor)
         self.spaceSize = self.characters['A'].get_width()
