@@ -54,4 +54,4 @@ class AnimatedSpriteObject(BaseSpriteObject):
             self.image = self.animations[self.currentAnimationSequence].next()
         except KeyError:
             self.image = self.fallBackImage
-        window.blit(self.image, (self.x, self.y))
+        window.blit(self.image, self.position)
