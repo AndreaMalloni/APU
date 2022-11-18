@@ -6,14 +6,16 @@ class BaseSpriteObject(pg.sprite.Sprite):
     Represents a generic non-animated sprite and 
     provides methods to draw itself on the (pygame) display and get the current position/size. 
     """
-    def __init__(self, x:int, y:int, defaultSpriteImage:pg.Surface = pg.Surface((0, 0))) -> None:
+    def __init__(self, x:int, y:int, layer:int = 0, defaultSpriteImage:pg.Surface = pg.Surface((0, 0))) -> None:
         """Constructs a sprite object with basic functionality.
  
         Args:
             x (int): x position of the sprite.
             y (int): y position of the sprite.
+            layer (int): the layer to draw the image to. Defaults to 0.
             defaultSpriteImage (pg.Surface, optional): default image to draw. Defaults to pg.Surface((0, 0)) (empty surface).
         """
+        self._layer = layer
         pg.sprite.Sprite.__init__(self)
         self.x = x
         self.y = y

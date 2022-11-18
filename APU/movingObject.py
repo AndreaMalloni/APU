@@ -3,8 +3,8 @@ from APU.core.animatedSpriteObject import AnimatedSpriteObject
 import pygame as pg
 
 class MovingObject(AnimatedSpriteObject):
-    def __init__(self, x:int, y:int, defaultSpriteImage = None, speed = 1, **kwargs):
-        super().__init__(x, y, defaultSpriteImage, **kwargs)
+    def __init__(self, x:int, y:int, layer:int = 0, defaultSpriteImage = None, speed = 1, **kwargs):
+        super().__init__(x, y, layer, defaultSpriteImage, **kwargs)
         self.speed = speed
         self.isMoving = False
         self.movingDirection = IDLE
