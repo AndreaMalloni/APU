@@ -86,11 +86,11 @@
   <properties>
    <property name="level" type="int" value="3"/>
   </properties>
-  <object id="1" class="solidObject" x="59" y="88.1667" width="329.3" height="16"/>
-  <object id="2" class="solidObject" x="59" y="241.5" width="329.3" height="16"/>
-  <object id="3" class="solidObject" x="58.6667" y="105" width="4.33333" height="135"/>
-  <object id="4" class="solidObject" x="383.833" y="104.833" width="4.33333" height="135"/>
-  <object id="7" name="spawn" x="168" y="152">
+  <object id="1" name="wall" class="solidObject" x="59" y="88.1667" width="329.3" height="16"/>
+  <object id="2" name="wall" class="solidObject" x="59" y="241.5" width="329.3" height="16"/>
+  <object id="3" name="wall" class="solidObject" x="58.6667" y="105" width="4.33333" height="135"/>
+  <object id="4" name="wall" class="solidObject" x="383.833" y="104.833" width="4.33333" height="135"/>
+  <object id="7" name="spawn" x="216.333" y="176">
    <point/>
   </object>
  </objectgroup>

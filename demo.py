@@ -9,15 +9,19 @@ from time import perf_counter
 
 pg.init()
 
-window = pg.display.set_mode((D_WIDTH, D_HEIGHT), flags = pg.SCALED, vsync = 1)
+window = pg.display.set_mode((D_WIDTH, D_HEIGHT), flags = pg.SCALED | pg.RESIZABLE, vsync = 0)
 clock = pg.time.Clock()
 font = Font(f"{ASSETSPATH}\large_font.png", (0, 0, 0))
 mapObject = TiledMap(f"{ASSETSPATH}\dungeon.tmx")
-layeredMap = mapObject.toLayeredGroup()
+#layeredMap = mapObject.toLayeredGroupLoose()
+layeredMap = mapObject.toLayeredGroupCompact()
+gameObjects = mapObject.getObjectsByLayerName("gameObjects")
+walls = mapObject.getObjectsByName("wall")
 
 player = EntityObject(
     x = mapObject.tmxMapObject.get_object_by_name("spawn").x, 
     y = mapObject.tmxMapObject.get_object_by_name("spawn").y,
+    speed = 3,
     layer = 1,
     defaultSpriteImage = Spritesheet(f"{ASSETSPATH}\Sprite-0001.png").image_at((0, 0, 16, 16), (0, 0, 0)),
     idle_front = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 0, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
@@ -35,7 +39,7 @@ font.changeColor((255, 0, 0), (127, 127, 127))
 layeredMap.add(player)
 
 while run:
-    clock.tick(400)
+    clock.tick(2000)
     dt, last_time = deltaT(last_time)
     
     for event in pg.event.get():
