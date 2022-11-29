@@ -34,5 +34,14 @@ def palette_swap(surf:pg.Surface, oldColor:pg.Color, newColor:pg.Color) -> pg.Su
     imgCopy.blit(surf, (0, 0))
     return imgCopy
 
+def tmxRectToPgRect(tmxObject):
+    points = tmxObject.as_points
+    left = points[0][0]
+    top = points[0][1] 
+    width = points[3][0] - points[0][0]
+    height = points[1][1] - points[0][1]
+    return pg.Rect(left, top, width, height)
+
+
 if __name__ == "__main__":
     print("All imports working!")
