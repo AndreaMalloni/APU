@@ -38,11 +38,11 @@ class AnimatedSpriteObject(BaseSpriteObject):
         Raises:
             KeyError: if the given animationSeq does not exist
         """
-        if animationSeq not in self.animations.keys():
+        if animationSeq is not None and animationSeq not in self.animations.keys():
             raise KeyError(f"This object has no assigned animation sequence for {animationSeq}")
 
         self.currentAnimationSequence = animationSeq
-        self.animations[self.currentAnimationSequence].iter()
+        if self.currentAnimationSequence is not None: self.animations[self.currentAnimationSequence].iter()
     
     def update(self) -> None:
         """Resets the width and height properties based on the sprite image size and 

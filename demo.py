@@ -4,19 +4,19 @@ from APU.entityObject import EntityObject
 from APU.core.spritesheet import Spritesheet, SpriteStripAnim
 from APU.core.font import Font
 from APU.tiledMap import TiledMap
-from APU.utility import deltaT
+from APU.utility import deltaT, tmxRectToPgRect
 from time import perf_counter
 
-pg.init()
+pg.init()    
 
 window = pg.display.set_mode((D_WIDTH, D_HEIGHT), flags = pg.SCALED | pg.RESIZABLE, vsync = 0)
 clock = pg.time.Clock()
 font = Font(f"{ASSETSPATH}\large_font.png", (0, 0, 0))
 mapObject = TiledMap(f"{ASSETSPATH}\dungeon.tmx")
-#layeredMap = mapObject.toLayeredGroupLoose()
 layeredMap = mapObject.toLayeredGroupCompact()
 gameObjects = mapObject.getObjectsByLayerName("gameObjects")
 walls = mapObject.getObjectsByName("wall")
+wallsRect = [tmxRectToPgRect(wall) for wall in walls]
 
 player = EntityObject(
     x = mapObject.tmxMapObject.get_object_by_name("spawn").x, 
@@ -28,6 +28,10 @@ player = EntityObject(
     idle_back = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 16, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
     idle_right = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 32, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
     idle_left = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 48, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
+    walk_front = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 64, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
+    walk_back = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 80, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
+    walk_right = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 96, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
+    walk_left = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 112, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
     defaultSeq = "idle_front"
     )
 
@@ -38,45 +42,59 @@ last_time = perf_counter()
 font.changeColor((255, 0, 0), (127, 127, 127))
 layeredMap.add(player)
 
+fullscreen = False
+toggleWall = False
+
 while run:
-    clock.tick(2000)
+    clock.tick(60)
     dt, last_time = deltaT(last_time)
-    
+
     for event in pg.event.get():
         if event.type == pg.QUIT:
             run = False
         if event.type == pg.KEYDOWN and event.key in KEYMAP:
             directions.append(KEYMAP[event.key])
-        if event.type == pg.KEYUP and event.key in KEYMAP:
+        if event.type == pg.KEYUP and event.key in KEYMAP and KEYMAP[event.key] in directions:
             directions.remove(KEYMAP[event.key])
+        if event.type == pg.KEYDOWN:
+            if event.key == pg.K_f:
+                if fullscreen: window = pg.display.set_mode((D_WIDTH, D_HEIGHT), flags=pg.SCALED | pg.RESIZABLE, vsync=0)  
+                else: pg.display.set_mode((D_WIDTH, D_HEIGHT), flags=pg.SCALED | pg.FULLSCREEN, vsync=1)
+                fullscreen = not fullscreen
+            if event.key == pg.K_t:
+                toggleWall = not toggleWall
 
-    player.move(directions, dt)
+    player.move(directions, dt, wallsRect)
 
-    if player.isMoving:
-        if player.movingDirection == NORTH:
+    if not player.isMoving:
+        if player.facingDirection == NORTH and player.currentAnimationSequence != "idle_back":
             player.switchTo("idle_back")
-        if player.movingDirection == EAST:
+        if player.facingDirection == EAST and player.currentAnimationSequence != "idle_right":
             player.switchTo("idle_right")
-        if player.movingDirection == SOUTH:
+        if player.facingDirection == SOUTH and player.currentAnimationSequence != "idle_front":
             player.switchTo("idle_front")
-        if player.movingDirection == WEST:
+        if player.facingDirection == WEST and player.currentAnimationSequence != "idle_left":
             player.switchTo("idle_left")
-    '''
-    else:       
-        if player.facingDirection == NORTH:
-            player.switchTo("idle_back")
-        if player.facingDirection == EAST:
-            player.switchTo("idle_right")
-        if player.facingDirection == SOUTH:
-            player.switchTo("idle_front")
-        if player.facingDirection == WEST:
-            player.switchTo("idle_left")
-    '''
+    else:
+        if player.facingDirection == SOUTH  and player.currentAnimationSequence != "walk_front":
+            player.switchTo("walk_front")
+        if player.facingDirection == EAST  and player.currentAnimationSequence != "walk_right":
+            player.switchTo("walk_right")
+        if player.facingDirection == NORTH  and player.currentAnimationSequence != "walk_back":
+            player.switchTo("walk_back")
+        if player.facingDirection == WEST  and player.currentAnimationSequence != "walk_left":
+            player.switchTo("walk_left")
+        
+
     window.fill((0, 0, 0))
-
     layeredMap.draw(window)
+
+    if toggleWall:
+        for rect in wallsRect:
+            pg.draw.rect(window, (127, 127, 127), rect)
+
     font.render(window, str(int(clock.get_fps())), (5, 5))
 
     layeredMap.update()
-    pg.display.update()
+    pg.display.flip()
 
