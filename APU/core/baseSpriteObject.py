@@ -39,8 +39,10 @@ class BaseSpriteObject(pg.sprite.Sprite):
         """Resets the width and height properties based on the sprite image size and 
         consequently updates the rect, comes in handy when resizing the game window.    
         """
-        self.width, self.height = self.image.get_size()
-        self.rect = pg.rect.Rect(self.x, self.y, self.width, self.height)
+        if self.image.get_size()[0] != self.width or self.image.get_size()[1] != self.height:
+            self.width, self.height = self.image.get_size()
+        if self.x != self.rect.x or self.y != self.rect.y:
+            self.rect = pg.rect.Rect(self.x, self.y, self.width, self.height)
 
     def draw(self, window:pg.display) -> None:
         """Draws the sprite image on the given (pygame) display in the current (x, y) position.
