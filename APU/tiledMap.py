@@ -3,6 +3,7 @@ import pytmx as tmx
 import os
 from APU.core.baseSpriteObject import BaseSpriteObject
 from APU.core.config import TILE_SIZE, DEFAULT_RESOLUTION
+from APU.utility import tmxRectToPgRect
 
 class TiledMap():
     def __init__(self, path) -> None:
@@ -26,41 +27,49 @@ class TiledMap():
         return layeredGroup
 
     def toLayeredGroupCompact(self) -> pg.sprite.LayeredUpdates:
-
-        def getTiles(layer):
-            tiles = []
-            for tile in layer.tiles():
-                tileX, tileY = tile[0] * TILE_SIZE, tile[1] * TILE_SIZE
-                if tileImage := tile[2]:
-                    tiles.append((tileX, tileY, tileImage))
-            return tiles
-           
         layeredGroup = pg.sprite.LayeredUpdates()
 
         for layer in self.tmxMapObject.visible_layers:
             layerSurface = pg.Surface(DEFAULT_RESOLUTION)
             layerSurface.set_colorkey((0, 0, 0))
             if isinstance(layer, tmx.TiledTileLayer):
-                tiles = getTiles(layer)
+                tiles = self._getTiles(layer)
                 if len(tiles) != 0:
                     for tile in tiles:
                         layerSurface.blit(tile[2].convert_alpha(), (tile[0], tile[1]))
                     layeredGroup.add(BaseSpriteObject(0, 0, layer.properties["level"], layerSurface))
         return layeredGroup
 
-    def getObjectsByLayerName(self, layer:str):
-        objects = []
+    def getObjectsByLayerName(self, layer:str)  -> pg.sprite.LayeredUpdates:
+        objects = pg.sprite.LayeredUpdates()
 
         for objectLayer in self._tmxMapObject.objectgroups:
             if objectLayer.name == layer:
-                objects.extend(iter(objectLayer))
+                for gameObject in objectLayer:
+                    rect = tmxRectToPgRect(gameObject)
+                    surface = pg.Surface((rect.width, rect.height))
+                    surface.set_colorkey((0, 0, 0))
+                    objects.add(BaseSpriteObject(rect.x, rect.y, objectLayer.properties["level"], surface))
         return objects
 
-    def getObjectsByName(self, name):
-        objects = []
+    def getObjectsByName(self, name) -> pg.sprite.LayeredUpdates:
+        objects = pg.sprite.LayeredUpdates()
 
         for objectLayer in self._tmxMapObject.objectgroups:
-            objects.extend(gameObject for gameObject in objectLayer if gameObject.name == name)
+            for gameObject in objectLayer:
+                if gameObject.name == name:
+                    rect = tmxRectToPgRect(gameObject)
+                    surface = pg.Surface((rect.width, rect.height))
+                    surface.set_colorkey((0, 0, 0))
+                    objects.add(BaseSpriteObject(rect.x, rect.y, objectLayer.properties["level"], surface))
 
         return objects
+
+    def _getTiles(self, layer):
+        tiles = []
+        for tile in layer.tiles():
+            tileX, tileY = tile[0] * TILE_SIZE, tile[1] * TILE_SIZE
+            if tileImage := tile[2]:
+                tiles.append((tileX, tileY, tileImage))
+        return tiles
 

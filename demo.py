@@ -4,6 +4,7 @@ from APU.entityObject import EntityObject
 from APU.core.spritesheet import Spritesheet, SpriteStripAnim
 from APU.core.font import Font
 from APU.tiledMap import TiledMap
+from APU.camera import CameraGroup
 from APU.utility import deltaT, tmxRectToPgRect
 from time import perf_counter
 
@@ -12,15 +13,17 @@ pg.init()
 window = pg.display.set_mode((D_WIDTH, D_HEIGHT), flags = pg.SCALED | pg.RESIZABLE, vsync = 0)
 clock = pg.time.Clock()
 font = Font(f"{ASSETSPATH}\large_font.png", (0, 0, 0))
-mapObject = TiledMap(f"{ASSETSPATH}\dungeon.tmx")
-layeredMap = mapObject.toLayeredGroupCompact()
-gameObjects = mapObject.getObjectsByLayerName("gameObjects")
+mapObject = TiledMap(f"{ASSETSPATH}\dungeon - large.tmx")
 walls = mapObject.getObjectsByName("wall")
-wallsRect = [tmxRectToPgRect(wall) for wall in walls]
+#wallsRect = [tmxRectToPgRect(wall) for wall in walls]
+
+cameraGroup = CameraGroup(0, 0, window.get_size())
+cameraGroup.add(mapObject.toLayeredGroupLoose())
+cameraGroup.add(walls)
 
 player = EntityObject(
-    x = mapObject.tmxMapObject.get_object_by_name("spawn").x, 
-    y = mapObject.tmxMapObject.get_object_by_name("spawn").y,
+    x = window.get_size()[0]/2 - 8, 
+    y = window.get_size()[1]/2 - 8,
     speed = 3,
     layer = 1,
     defaultSpriteImage = Spritesheet(f"{ASSETSPATH}\Sprite-0001.png").image_at((0, 0, 16, 16), (0, 0, 0)),
@@ -40,13 +43,14 @@ pg.display.set_caption("Demo")
 run = True
 last_time = perf_counter()
 font.changeColor((255, 0, 0), (127, 127, 127))
-layeredMap.add(player)
-
+cameraGroup.add(player)
+cameraGroup.setMode(0, player)
+        
 fullscreen = False
 toggleWall = False
 
 while run:
-    clock.tick(60)
+    clock.tick(2000)
     dt, last_time = deltaT(last_time)
 
     for event in pg.event.get():
@@ -64,7 +68,7 @@ while run:
             if event.key == pg.K_t:
                 toggleWall = not toggleWall
 
-    player.move(directions, dt, wallsRect)
+    player.move(directions, dt)
 
     if not player.isMoving:
         if player.facingDirection == NORTH and player.currentAnimationSequence != "idle_back":
@@ -87,14 +91,14 @@ while run:
         
 
     window.fill((0, 0, 0))
-    layeredMap.draw(window)
-
+    cameraGroup.customDraw(window)
+    
     if toggleWall:
-        for rect in wallsRect:
-            pg.draw.rect(window, (127, 127, 127), rect)
+        for wall in walls:
+            pg.draw.rect(window, (127, 127, 127), wall.rect)
 
     font.render(window, str(int(clock.get_fps())), (5, 5))
 
-    layeredMap.update()
+    cameraGroup.customUpdate()
     pg.display.flip()
 
