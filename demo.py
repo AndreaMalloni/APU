@@ -4,7 +4,7 @@ from APU.entityObject import EntityObject
 from APU.core.spritesheet import Spritesheet, SpriteStripAnim
 from APU.core.font import Font
 from APU.tiledMap import TiledMap
-from APU.camera import CameraGroup
+from APU.camera import YSortCameraGroup, LayeredCameraGroup
 from APU.utility import deltaT, tmxRectToPgRect
 from time import perf_counter
 
@@ -17,8 +17,8 @@ mapObject = TiledMap(f"{ASSETSPATH}\dungeon - large.tmx")
 walls = mapObject.getObjectsByName("wall")
 #wallsRect = [tmxRectToPgRect(wall) for wall in walls]
 
-cameraGroup = CameraGroup(0, 0, window.get_size())
-cameraGroup.add(mapObject.toLayeredGroupLoose())
+cameraGroup = YSortCameraGroup(0, 0, window.get_size())
+cameraGroup.add(mapObject.toSpriteGroupLoose())
 cameraGroup.add(walls)
 
 player = EntityObject(
@@ -91,6 +91,7 @@ while run:
         
 
     window.fill((0, 0, 0))
+    cameraGroup.customUpdate()
     cameraGroup.customDraw(window)
     
     if toggleWall:
@@ -99,6 +100,5 @@ while run:
 
     font.render(window, str(int(clock.get_fps())), (5, 5))
 
-    cameraGroup.customUpdate()
     pg.display.flip()
 

@@ -16,6 +16,16 @@ class TiledMap():
     def tmxMapObject(self) -> tmx.TiledMap:
         return self._tmxMapObject
 
+    def toSpriteGroupLoose(self) -> pg.sprite.Group:
+        spriteGroup = pg.sprite.Group()
+        for layer in self.tmxMapObject.visible_layers:
+            if isinstance(layer, tmx.TiledTileLayer):
+                for tile in layer.tiles():
+                    tileImage = tile[2]
+                    tileX, tileY = tile[0] * TILE_SIZE, tile[1] * TILE_SIZE
+                    if tileImage is not None: spriteGroup.add(BaseSpriteObject(tileX, tileY, defaultSpriteImage = tileImage))
+        return spriteGroup
+
     def toLayeredGroupLoose(self) -> pg.sprite.LayeredUpdates:
         layeredGroup = pg.sprite.LayeredUpdates()
         for layer in self.tmxMapObject.visible_layers:
@@ -40,8 +50,8 @@ class TiledMap():
                     layeredGroup.add(BaseSpriteObject(0, 0, layer.properties["level"], layerSurface))
         return layeredGroup
 
-    def getObjectsByLayerName(self, layer:str)  -> pg.sprite.LayeredUpdates:
-        objects = pg.sprite.LayeredUpdates()
+    def getObjectsByLayerName(self, layer:str)  -> pg.sprite.Group:
+        objects = pg.sprite.Group()
 
         for objectLayer in self._tmxMapObject.objectgroups:
             if objectLayer.name == layer:
@@ -49,11 +59,11 @@ class TiledMap():
                     rect = tmxRectToPgRect(gameObject)
                     surface = pg.Surface((rect.width, rect.height))
                     surface.set_colorkey((0, 0, 0))
-                    objects.add(BaseSpriteObject(rect.x, rect.y, objectLayer.properties["level"], surface))
+                    objects.add(BaseSpriteObject(rect.x, rect.y, surface))
         return objects
 
-    def getObjectsByName(self, name) -> pg.sprite.LayeredUpdates:
-        objects = pg.sprite.LayeredUpdates()
+    def getObjectsByName(self, name) -> pg.sprite.Group:
+        objects = pg.sprite.Group()
 
         for objectLayer in self._tmxMapObject.objectgroups:
             for gameObject in objectLayer:
@@ -61,7 +71,7 @@ class TiledMap():
                     rect = tmxRectToPgRect(gameObject)
                     surface = pg.Surface((rect.width, rect.height))
                     surface.set_colorkey((0, 0, 0))
-                    objects.add(BaseSpriteObject(rect.x, rect.y, objectLayer.properties["level"], surface))
+                    objects.add(BaseSpriteObject(rect.x, rect.y, surface))
 
         return objects
 
