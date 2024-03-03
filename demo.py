@@ -1,104 +1,200 @@
-import pygame as pg
-from APU.core.config import D_WIDTH, D_HEIGHT, ASSETSPATH, NORTH, EAST, SOUTH, WEST, DEFAULT_FPS, KEYMAP
-from APU.entityObject import EntityObject
-from APU.core.spritesheet import Spritesheet, SpriteStripAnim
-from APU.core.font import Font
-from APU.tiledMap import TiledMap
-from APU.camera import YSortCameraGroup, LayeredCameraGroup
-from APU.utility import deltaT, tmxRectToPgRect
-from time import perf_counter
+import sys
+import json
+import pygame
+import APU.font
+import APU.entities
+from APU.collision import CollisionDetector, COLLISION_EVENT
+from APU.scene import TiledScene
+from APU.spritesheet import AnimationSequence, SpriteSheet
+from APU.utility import Directions
 
-pg.init()    
 
-window = pg.display.set_mode((D_WIDTH, D_HEIGHT), flags = pg.SCALED | pg.RESIZABLE, vsync = 0)
-clock = pg.time.Clock()
-font = Font(f"{ASSETSPATH}\large_font.png", (0, 0, 0))
-mapObject = TiledMap(f"{ASSETSPATH}\dungeon - large.tmx")
-walls = mapObject.getObjectsByName("wall")
-#wallsRect = [tmxRectToPgRect(wall) for wall in walls]
+def load_map(map_path: str, assets_path):
+    json_data = json.load(open(map_path))
+    tile_size = json_data["tileheight"]
+    sheet = SpriteSheet(assets_path + "tileset.png")
 
-cameraGroup = YSortCameraGroup(0, 0, window.get_size())
-cameraGroup.add(mapObject.toSpriteGroupLoose())
-cameraGroup.add(walls)
+    def get_objects():
+        objects = {}
+        for tileset in json_data["tilesets"]:
+            for tile in tileset["tiles"]:
+                if "objectgroup" in tile.keys():
+                    for obj in tile["objectgroup"]["objects"]:
+                        objects[tile["id"]] = pygame.rect.Rect((obj["x"], obj["y"]), (obj["width"], obj["height"]))
+        return objects
 
-player = EntityObject(
-    x = window.get_size()[0]/2 - 8, 
-    y = window.get_size()[1]/2 - 8,
-    speed = 3,
-    layer = 1,
-    defaultSpriteImage = Spritesheet(f"{ASSETSPATH}\Sprite-0001.png").image_at((0, 0, 16, 16), (0, 0, 0)),
-    idle_front = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 0, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
-    idle_back = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 16, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
-    idle_right = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 32, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
-    idle_left = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 48, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
-    walk_front = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 64, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
-    walk_back = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 80, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
-    walk_right = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 96, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
-    walk_left = SpriteStripAnim(f"{ASSETSPATH}\Sprite-0001.png", (0, 112, 16, 16), 3, (0, 0, 0), True, DEFAULT_FPS/10),
-    defaultSeq = "idle_front"
-    )
+    def get_animations_by_id(tile_id):
+        animations = []
+        for tileset in json_data["tilesets"]:
+            for tile in tileset["tiles"]:
+                if tile["id"] == tile_id and "animation" in tile.keys():
+                    images = sheet.load_sequence(pygame.rect.Rect((), (tile_size, tile_size)),
+                                                 len(tile["animation"].values()),
+                                                 pygame.color.Color(0, 0, 0)),
+                    animations.append(AnimationSequence(images,
+                                                        True,
+                                                        tile["animation"][0]["duration"]))
+        return animations
 
-directions = []
-pg.display.set_caption("Demo")
-run = True
-last_time = perf_counter()
-font.changeColor((255, 0, 0), (127, 127, 127))
-cameraGroup.add(player)
-cameraGroup.setMode(0, player)
-        
-fullscreen = False
-toggleWall = False
+    def get_image_by_id(tile_id):
+        image_position = divmod(tile_id - 1, sheet.sheet.get_size()[0] // tile_size)
+        image_position = (image_position[1] * tile_size, image_position[0] * tile_size)
 
-while run:
-    clock.tick(2000)
-    dt, last_time = deltaT(last_time)
+        image = sheet.image_at(pygame.rect.Rect(
+            image_position,
+            (tile_size, tile_size)))
+        image.set_colorkey((0, 0, 0))
+        return image
 
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
-            run = False
-        if event.type == pg.KEYDOWN and event.key in KEYMAP:
-            directions.append(KEYMAP[event.key])
-        if event.type == pg.KEYUP and event.key in KEYMAP and KEYMAP[event.key] in directions:
-            directions.remove(KEYMAP[event.key])
-        if event.type == pg.KEYDOWN:
-            if event.key == pg.K_f:
-                if fullscreen: window = pg.display.set_mode((D_WIDTH, D_HEIGHT), flags=pg.SCALED | pg.RESIZABLE, vsync=0)  
-                else: pg.display.set_mode((D_WIDTH, D_HEIGHT), flags=pg.SCALED | pg.FULLSCREEN, vsync=1)
-                fullscreen = not fullscreen
-            if event.key == pg.K_t:
-                toggleWall = not toggleWall
+    sprites = []
+    hitboxes = get_objects()
 
-    player.move(directions, dt)
+    for layer_index, layer in enumerate(json_data["layers"]):
+        for tile_index, tile_id in enumerate(layer["data"]):
+            if tile_id != 0:
+                image_position = divmod(tile_id - 1, sheet.sheet.get_size()[0] // tile_size)
+                image_position = (image_position[1] * tile_size, image_position[0] * tile_size)
 
-    if not player.isMoving:
-        if player.facingDirection == NORTH and player.currentAnimationSequence != "idle_back":
-            player.switchTo("idle_back")
-        if player.facingDirection == EAST and player.currentAnimationSequence != "idle_right":
-            player.switchTo("idle_right")
-        if player.facingDirection == SOUTH and player.currentAnimationSequence != "idle_front":
-            player.switchTo("idle_front")
-        if player.facingDirection == WEST and player.currentAnimationSequence != "idle_left":
-            player.switchTo("idle_left")
-    else:
-        if player.facingDirection == SOUTH  and player.currentAnimationSequence != "walk_front":
-            player.switchTo("walk_front")
-        if player.facingDirection == EAST  and player.currentAnimationSequence != "walk_right":
-            player.switchTo("walk_right")
-        if player.facingDirection == NORTH  and player.currentAnimationSequence != "walk_back":
-            player.switchTo("walk_back")
-        if player.facingDirection == WEST  and player.currentAnimationSequence != "walk_left":
-            player.switchTo("walk_left")
-        
+                tile_position = divmod(tile_index, json_data["width"])
+                tile_position = (tile_position[1] * tile_size, tile_position[0] * tile_size)
 
-    window.fill((0, 0, 0))
-    cameraGroup.customUpdate()
-    cameraGroup.customDraw(window)
-    
-    if toggleWall:
-        for wall in walls:
-            pg.draw.rect(window, (127, 127, 127), wall.rect)
+                # tile animations
 
-    font.render(window, str(int(clock.get_fps())), (5, 5))
+                image = sheet.image_at(pygame.rect.Rect(
+                    image_position,
+                    (tile_size, tile_size)))
+                image.set_colorkey((0, 0, 0))
+                sprite = APU.entities.BaseSprite(position=tile_position,
+                                                 layer=layer_index,
+                                                 image=image)
+                if tile_id - 1 in hitboxes:
+                    sprite.add_hitbox(box1=hitboxes[tile_id - 1])
+                sprites.append(sprite)
+    return sprites
 
-    pg.display.flip()
 
+class Game:
+    def __init__(self):
+        pygame.init()
+        self._assets_path = "C:\\Users\\mallo\\Documents\\GitHub\\APU\\assets\\"
+        self.screen = pygame.display.set_mode((1280, 720), flags=pygame.SCALED, vsync=1)
+        self.sheet = SpriteSheet(self._assets_path + "characters.png")
+        self.assets = {
+            "player_idle_right": AnimationSequence(self.sheet.load_sequence(
+                pygame.Rect(0, 14, 16, 19),
+                4,
+                pygame.Color(0, 0, 0), ),
+                True,
+                120),
+            "player_idle_left": AnimationSequence(self.sheet.load_sequence(
+                pygame.Rect(0, 14, 16, 19),
+                4,
+                pygame.Color(0, 0, 0)),
+                True,
+                120).mirror(),
+            "player_walk_right": AnimationSequence(self.sheet.load_sequence(
+                pygame.Rect(0, 44, 16, 19),
+                4,
+                pygame.Color(0, 0, 0)),
+                True,
+                120),
+            "player_walk_left": AnimationSequence(self.sheet.load_sequence(
+                pygame.Rect(0, 44, 16, 19),
+                4,
+                pygame.Color(0, 0, 0)),
+                True,
+                120).mirror()
+        }
+
+        self.virtual_display = pygame.Surface((640, 360))
+        self.clock = pygame.time.Clock()
+        self.font = APU.font.Font(self._assets_path + "small_font.png", pygame.Color(0, 0, 0))
+        self.running = False
+
+        self.tiled_map = TiledScene(16, *load_map(self._assets_path + "map.json", self._assets_path))
+        self.player = APU.entities.MovableSprite(
+            position=(304, 164),
+            speed=2,
+        )
+        self.player.add_animation(
+            idle_right=self.assets["player_idle_right"],
+            idle_left=self.assets["player_idle_left"],
+            walk_right=self.assets["player_walk_right"],
+            walk_left=self.assets["player_walk_left"])
+        self.player.add_hitbox(
+            box1=pygame.rect.Rect((0, 0), (8, 16)),
+            box2=pygame.rect.Rect((8, 0), (8, 16)))
+        self.collider = CollisionDetector(self.tiled_map)
+        pygame.display.set_caption("APU demo game")
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    self.player.move(Directions.UP, True)
+                if event.key == pygame.K_DOWN:
+                    self.player.move(Directions.DOWN, True)
+                if event.key == pygame.K_LEFT:
+                    self.player.move(Directions.LEFT, True)
+                if event.key == pygame.K_RIGHT:
+                    self.player.move(Directions.RIGHT, True)
+                if event.key == pygame.K_f:
+                    pygame.display.toggle_fullscreen()
+                if event.key == pygame.K_h:
+                    self.tiled_map.show_hitbox = not self.tiled_map.show_hitbox
+                if event.key == pygame.K_q:
+                    self.running = False
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_UP:
+                    self.player.stop(Directions.UP)
+                if event.key == pygame.K_DOWN:
+                    self.player.stop(Directions.DOWN)
+                if event.key == pygame.K_LEFT:
+                    self.player.stop(Directions.LEFT)
+                if event.key == pygame.K_RIGHT:
+                    self.player.stop(Directions.RIGHT)
+            if event.type == COLLISION_EVENT:
+                print(event)
+
+    def handle_rendering(self):
+        self.virtual_display.fill((28, 17, 23))
+
+        self.tiled_map.render(self.virtual_display)
+        self.player.draw(self.virtual_display)
+        self.font.render(self.virtual_display, str(int(self.clock.get_fps())), (5, 5))
+        self.font.render(self.virtual_display, "Press 'f' to toggle fullscreen", (522, 5))
+        self.font.render(self.virtual_display, "Press 'h' to toggle hitboxes", (522, 15))
+        self.font.render(self.virtual_display, "Press 'q' to quit", (522, 25))
+        self.screen.blit(pygame.transform.scale(self.virtual_display, self.screen.get_size()), (0, 0))
+
+    def update_state(self):
+        if not self.player.is_moving:
+            if self.player.facing_direction == Directions.LEFT and self.player.current_sequence != "idle_left":
+                self.player.switch_to("idle_left")
+            if self.player.facing_direction == Directions.RIGHT and self.player.current_sequence != "idle_right":
+                self.player.switch_to("idle_right")
+        else:
+            if self.player.facing_direction == Directions.LEFT and self.player.current_sequence != "walk_left":
+                self.player.switch_to("walk_left")
+            if self.player.facing_direction == Directions.RIGHT and self.player.current_sequence != "walk_right":
+                self.player.switch_to("walk_right")
+        self.player.update()
+
+    def run(self):
+        self.running = not self.running
+        #self.collider.start()
+
+        while self.running:
+            self.clock.tick(2000)
+            self.handle_events()
+            self.handle_rendering()
+            self.update_state()
+            pygame.display.update()
+
+        sys.exit()
+
+
+if __name__ == "__main__":
+    Game().run()
