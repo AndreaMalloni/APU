@@ -1,7 +1,4 @@
-import copy
-
 import pygame
-from pygame import Vector2
 
 from APU.spritesheet import AnimationSequence
 from APU.utility import Directions
@@ -17,8 +14,9 @@ class BaseSprite(pygame.sprite.Sprite):
                  position: tuple[int, int],
                  layer: int = 0,
                  image: pygame.Surface = pygame.Surface((0, 0))) -> None:
+
         """Constructs a sprite object with basic functionality.
- 
+
         Args:
             position (tuple): x and y coordinates of the sprite.
             layer (int, optional): the layer to draw the image to. Defaults to 0.
@@ -29,14 +27,8 @@ class BaseSprite(pygame.sprite.Sprite):
         self.image = image
         self.x, self.y = position[0], position[1]
 
-        self.animations = {}
-        self.current_sequence = None
-
-        self.__fallBackImage = image
-        self.__hitboxes = {}
-
     @property
-    def position(self) -> tuple:
+    def position(self) -> tuple[int, int]:
         """Returns a vector of int values (x position, y position)."""
         return self.x, self.y
 
@@ -49,23 +41,108 @@ class BaseSprite(pygame.sprite.Sprite):
     def rect(self) -> pygame.rect.Rect:
         return self.image.get_rect(topleft=self.position)
 
-    @property
-    def hitboxes(self) -> dict:
-        boxes = {}
+    def draw(self, window: pygame.Surface, flags: int = 0) -> None:
+        """Draws the sprite image on the given (pygame) display in the current (x, y) position.
 
-        for hitbox in self.__hitboxes:
-            raw_box = self.__hitboxes[hitbox]
-            boxes[hitbox] = pygame.rect.Rect((raw_box.x + self.x, raw_box.y + self.y),
-                                             (raw_box.width, raw_box.height))
-        return boxes
+        Args:
+            :param window: display to draw the image to.
+            :param flags: pygame special_flags
+        """
+        window.blit(self.image, self.position, special_flags=flags)
+
+    def update(self) -> None:
+        pass
+
+
+class MovableBody:
+    """
+    Represents a generic sprite with moving functionality that can also be animated.
+    Can handle movements in 4 different directions and provides methods to move the sprite or stop it.
+    """
+
+    def __init__(self,
+                 speed: int = 1,
+                 acceleration: int = 0):
+        super().__init__()
+        self.speed = speed
+        self.acceleration = acceleration
+        self.is_moving = False
+        self.facing_direction = Directions.DOWN
+
+        self._delta_speed = speed
+        self._state = {
+            Directions.UP: [False, False],
+            Directions.LEFT: [False, False],
+            Directions.DOWN: [False, False],
+            Directions.RIGHT: [False, False],
+        }
 
     @property
-    def solid(self) -> bool:
-        return bool(self.__hitboxes)
+    def movements(self) -> tuple[Directions]:
+        directions = [key for key in self._state if self._state[key][0]]
+        return tuple(directions)
+
+    def start(self, direction: Directions, loop: bool = False, dt: float = 1.0):
+        if direction not in self._state:
+            raise AttributeError(
+                f"{direction} is not a valid moving direction. Alternatives: {self._state.keys()}")
+
+        self.is_moving = True
+        self._delta_speed = self.speed * dt
+
+        if not self._state[direction][0]:
+            self.facing_direction = direction
+            self._state[direction] = [True, loop]
+
+    def stop(self, direction: Directions):
+        if direction not in self._state:
+            raise AttributeError(
+                f"Can't stop a non valid moving direction: {direction}. Alternatives: {self._state.keys()}")
+
+        if self.is_moving:
+            self._state[direction] = [False, False]
+            if not self.movements:
+                self.is_moving = False
+
+    def move(self) -> tuple[float, float]:
+        delta_x = ((self._state[Directions.LEFT][0] - self._state[Directions.RIGHT][0]) *
+                      (self.speed + self.acceleration))
+        delta_y = ((self._state[Directions.UP][0] - self._state[Directions.DOWN][0]) *
+                      (self.speed + self.acceleration))
+
+        for direction in self.movements:
+            if not self._state[direction][1]:
+                self.stop(direction)
+
+        return delta_x, delta_y
+
+
+class SolidBody:
+    def __init__(self, **hitboxes: pygame.rect.Rect):
+        super().__init__()
+        self.__hitboxes = {}
+        self.add_hitbox(**hitboxes)
 
     def add_hitbox(self, **boxes: pygame.rect.Rect) -> None:
         """Updates the hitbox dict with any given rect."""
         self.__hitboxes.update(**boxes)
+
+    @property
+    def hitboxes(self) -> dict:
+        return self.__hitboxes
+
+    @property
+    def solid(self) -> bool:
+        return bool(self.hitboxes)
+
+
+class AnimatedBody:
+    def __init__(self, fallback: pygame.Surface = pygame.Surface((0, 0)), **sequences: AnimationSequence):
+        super().__init__()
+        self.animations = {}
+        self.current_sequence = None
+        self.__fallback_image = fallback
+        self.add_animation(**sequences)
 
     def add_animation(self, **sequences: AnimationSequence) -> None:
         """Updates the animations dict with any given animation sequence."""
@@ -108,93 +185,51 @@ class BaseSprite(pygame.sprite.Sprite):
 
         self.animations[animation_seq].running = active
 
-    def draw(self, window: pygame.Surface, flags: int = 0) -> None:
-        """Draws the sprite image on the given (pygame) display in the current (x, y) position.
-
-        Args:
-            :param window: display to draw the image to.
-            :param flags: pygame special_flags
-        """
-        window.blit(self.image, self.position, special_flags=flags)
-
-    def update(self) -> None:
-        """Updates the image attribute to the next frame of the current playing animation sequence"""
-
+    def play_current(self) -> pygame.Surface:
         if any(self.animations):
             try:
-                self.image = self.animations[self.current_sequence].__next__()
+                return self.animations[self.current_sequence].__next__()
             except KeyError:
-                self.image = self.__fallBackImage
+                return self.__fallback_image
 
 
-class MovableSprite(BaseSprite):
-    """
-    Represents a generic sprite with moving functionality that can also be animated.
-    Can handle movements in 4 different directions and provides methods to move the sprite or stop it.
-    """
-
+class Entity(BaseSprite):
     def __init__(self,
                  position: tuple[int, int],
                  layer: int = 0,
                  image: pygame.Surface = pygame.Surface((0, 0)),
-                 speed: int = 1,
-                 acceleration: int = 0):
-
-        super(MovableSprite, self).__init__(position, layer, image)
-        self.speed = speed
-        self.acceleration = acceleration
-        self.is_moving = False
-        self.facing_direction = Directions.DOWN
-
-        self._delta_speed = speed
-        self._state = {
-            Directions.UP   : [False, False],
-            Directions.LEFT : [False, False],
-            Directions.DOWN : [False, False],
-            Directions.RIGHT: [False, False],
-        }
+                 m_body: MovableBody = None,
+                 s_body: SolidBody = None,
+                 a_body: AnimatedBody = None):
+        super().__init__(position, layer, image)
+        self.movable_body = m_body
+        self.solid_body = s_body
+        self.animated_body = a_body
 
     @property
-    def movements(self) -> tuple[Directions]:
-        directions = [key for key in self._state if self._state[key][0]]
-        return tuple(directions)
+    def hitboxes(self) -> dict:
+        boxes = {}
 
-    def move(self, direction: Directions, loop: bool = False, dt: float = 1.0):
-        if direction not in self._state:
-            raise AttributeError(
-                f"{direction} is not a valid moving direction. Alternatives: {self._state.keys()}")
+        if self.solid_body:
+            for hitbox in self.solid_body.hitboxes:
+                raw_box = self.solid_body.hitboxes[hitbox]
+                boxes[hitbox] = pygame.rect.Rect((raw_box.x + self.x, raw_box.y + self.y),
+                                                 (raw_box.width, raw_box.height))
+        return boxes
 
-        self.is_moving = True
-        self._delta_speed = self.speed * dt
+    def draw(self, window: pygame.Surface, flags: int = 0) -> None:
+        window.blit(self.image, self.position, special_flags=flags)
 
-        if not self._state[direction][0]:
-            self.facing_direction = direction
-            self._state[direction] = [True, loop]
+    def update(self) -> None:
+        super(Entity, self).update()
 
-    def stop(self, direction: Directions):
-        if direction not in self._state:
-            raise AttributeError(
-                f"Can't stop a non valid moving direction: {direction}. Alternatives: {self._state.keys()}")
+        if self.movable_body.is_moving:
+            delta_x, delta_y = self.movable_body.move()
 
-        if self.is_moving:
-            self._state[direction] = [False, False]
-            if not self.movements:
-                self.is_moving = False
+            self.x -= delta_x
+            self.y -= delta_y
 
-    def update(self):
-        if self.is_moving:
-            x_movement = ((self._state[Directions.LEFT][0] - self._state[Directions.RIGHT][0]) *
-                          (self.speed + self.acceleration))
-            y_movement = ((self._state[Directions.UP][0] - self._state[Directions.DOWN][0]) *
-                          (self.speed + self.acceleration))
-
-            self.x -= x_movement
-            self.y -= y_movement
-
-            for direction in self.movements:
-                if not self._state[direction][1]:
-                    self.stop(direction)
-        super(MovableSprite, self).update()
+        self.image = self.animated_body.play_current()
 
 
 if __name__ == "__main__":

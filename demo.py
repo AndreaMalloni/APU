@@ -64,11 +64,11 @@ def load_map(map_path: str, assets_path):
                     image_position,
                     (tile_size, tile_size)))
                 image.set_colorkey((0, 0, 0))
-                sprite = APU.entities.BaseSprite(position=tile_position,
-                                                 layer=layer_index,
-                                                 image=image)
+                sprite = APU.entities.Entity(position=tile_position,
+                                             layer=layer_index,
+                                             image=image)
                 if tile_id - 1 in hitboxes:
-                    sprite.add_hitbox(box1=hitboxes[tile_id - 1])
+                    sprite.solid_body = APU.entities.SolidBody(box1=hitboxes[tile_id - 1])
                 sprites.append(sprite)
     return sprites
 
@@ -112,18 +112,23 @@ class Game:
         self.running = False
 
         self.tiled_map = TiledScene(16, *load_map(self._assets_path + "map.json", self._assets_path))
-        self.player = APU.entities.MovableSprite(
+        self.player = APU.entities.Entity(
             position=(304, 164),
-            speed=2,
+            m_body=APU.entities.MovableBody(
+                speed=3
+            ),
+            a_body=APU.entities.AnimatedBody(
+                idle_right=self.assets["player_idle_right"],
+                idle_left=self.assets["player_idle_left"],
+                walk_right=self.assets["player_walk_right"],
+                walk_left=self.assets["player_walk_left"]
+            ),
+            s_body=APU.entities.SolidBody(
+                box1=pygame.rect.Rect((0, 0), (8, 16)),
+                box2=pygame.rect.Rect((8, 0), (8, 16))
+            )
         )
-        self.player.add_animation(
-            idle_right=self.assets["player_idle_right"],
-            idle_left=self.assets["player_idle_left"],
-            walk_right=self.assets["player_walk_right"],
-            walk_left=self.assets["player_walk_left"])
-        self.player.add_hitbox(
-            box1=pygame.rect.Rect((0, 0), (8, 16)),
-            box2=pygame.rect.Rect((8, 0), (8, 16)))
+
         self.collider = CollisionDetector(self.tiled_map)
         pygame.display.set_caption("APU demo game")
 
@@ -133,13 +138,13 @@ class Game:
                 self.running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    self.player.move(Directions.UP, True)
+                    self.player.movable_body.start(Directions.UP, True)
                 if event.key == pygame.K_DOWN:
-                    self.player.move(Directions.DOWN, True)
+                    self.player.movable_body.start(Directions.DOWN, True)
                 if event.key == pygame.K_LEFT:
-                    self.player.move(Directions.LEFT, True)
+                    self.player.movable_body.start(Directions.LEFT, True)
                 if event.key == pygame.K_RIGHT:
-                    self.player.move(Directions.RIGHT, True)
+                    self.player.movable_body.start(Directions.RIGHT, True)
                 if event.key == pygame.K_f:
                     pygame.display.toggle_fullscreen()
                 if event.key == pygame.K_h:
@@ -148,13 +153,13 @@ class Game:
                     self.running = False
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_UP:
-                    self.player.stop(Directions.UP)
+                    self.player.movable_body.stop(Directions.UP)
                 if event.key == pygame.K_DOWN:
-                    self.player.stop(Directions.DOWN)
+                    self.player.movable_body.stop(Directions.DOWN)
                 if event.key == pygame.K_LEFT:
-                    self.player.stop(Directions.LEFT)
+                    self.player.movable_body.stop(Directions.LEFT)
                 if event.key == pygame.K_RIGHT:
-                    self.player.stop(Directions.RIGHT)
+                    self.player.movable_body.stop(Directions.RIGHT)
             if event.type == COLLISION_EVENT:
                 print(event)
 
@@ -170,21 +175,25 @@ class Game:
         self.screen.blit(pygame.transform.scale(self.virtual_display, self.screen.get_size()), (0, 0))
 
     def update_state(self):
-        if not self.player.is_moving:
-            if self.player.facing_direction == Directions.LEFT and self.player.current_sequence != "idle_left":
-                self.player.switch_to("idle_left")
-            if self.player.facing_direction == Directions.RIGHT and self.player.current_sequence != "idle_right":
-                self.player.switch_to("idle_right")
+        if not self.player.movable_body.is_moving:
+            if self.player.movable_body.facing_direction == Directions.LEFT and \
+                    self.player.animated_body.current_sequence != "idle_left":
+                self.player.animated_body.switch_to("idle_left")
+            if self.player.movable_body.facing_direction == Directions.RIGHT and \
+                    self.player.animated_body.current_sequence != "idle_right":
+                self.player.animated_body.switch_to("idle_right")
         else:
-            if self.player.facing_direction == Directions.LEFT and self.player.current_sequence != "walk_left":
-                self.player.switch_to("walk_left")
-            if self.player.facing_direction == Directions.RIGHT and self.player.current_sequence != "walk_right":
-                self.player.switch_to("walk_right")
+            if self.player.movable_body.facing_direction == Directions.LEFT and \
+                    self.player.animated_body.current_sequence != "walk_left":
+                self.player.animated_body.switch_to("walk_left")
+            if self.player.movable_body.facing_direction == Directions.RIGHT and \
+                    self.player.animated_body.current_sequence != "walk_right":
+                self.player.animated_body.switch_to("walk_right")
         self.player.update()
 
     def run(self):
         self.running = not self.running
-        #self.collider.start()
+        # self.collider.start()
 
         while self.running:
             self.clock.tick(2000)
