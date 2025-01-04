@@ -1,4 +1,5 @@
 import copy
+import abc
 
 import pygame
 from pygame import Vector2
@@ -7,7 +8,26 @@ from APU.spritesheet import AnimationSequence
 from APU.utility import Directions
 
 
-class BaseSprite(pygame.sprite.Sprite):
+class Drawable(abc.ABC):
+    """
+    Abstract class that encapsulates the drawing operation of a (pygame) surface.
+
+    A drawable object should contain the surface to draw and every parameter needed for its rendering, which must be
+    specified as keyword arguments.
+    """
+    def __init__(self, **kwargs) -> None:
+        self.__dict__.update(kwargs)
+
+    @abc.abstractmethod
+    def draw(self) -> None:
+        """
+        The object draws itself
+        """
+        pass
+
+
+
+class BaseSprite(pygame.sprite.Sprite, Drawable):
     """
     Represents a generic static sprite and provides methods
     to draw itself on the (pygame) display and get the current position/size.
@@ -16,7 +36,8 @@ class BaseSprite(pygame.sprite.Sprite):
     def __init__(self,
                  position: tuple[int, int],
                  layer: int = 0,
-                 image: pygame.Surface = pygame.Surface((0, 0))) -> None:
+                 image: pygame.Surface = pygame.Surface((0, 0)),
+                 rendering_flags: int = 0) -> None:
         """Constructs a sprite object with basic functionality.
  
         Args:
@@ -25,8 +46,9 @@ class BaseSprite(pygame.sprite.Sprite):
             image (pygame.Surface, optional): default image to draw. Defaults to empty surface.
         """
         self._layer = layer
-        super(BaseSprite, self).__init__()
-        self.image = image
+
+        Drawable.__init__(self, image=image, special_flags=rendering_flags)
+        pygame.sprite.Sprite.__init__(self)
         self.x, self.y = position[0], position[1]
 
         self.animations = {}
