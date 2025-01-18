@@ -19,9 +19,9 @@ class Drawable(abc.ABC):
         self.__dict__.update(kwargs)
 
     @abc.abstractmethod
-    def draw(self) -> None:
+    def draw(self, destination: pygame.surface.Surface) -> None:
         """
-        The object draws itself
+        The object draws itself onto the destination surface.
         """
         pass
 

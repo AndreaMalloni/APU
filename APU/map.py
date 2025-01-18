@@ -3,27 +3,29 @@ import abc
 import pygame
 from pygame import Surface
 
-from APU.entities import Drawable
+from APU.entities import Drawable, BaseSprite
 
-class Map[T: Drawable](abc.ABC):
+
+class Map[T: Drawable, E: collections.abc.Collection](abc.ABC):
     """
     Abstract class that represents a generic map of a game.
     A map is composed by a background surface and a collection of static elements that should be rendered above it.
 
-    This class is supposed to be inherited, and leaves to the concrete classes the implementation of the internal.
+    This class is supposed to be inherited, and leaves to the concrete classes the implementation of the internal logic
+    and data structure.
     """
     def __init__(self, background: Drawable, *items: T) -> None:
-        self.background = background
+        self.background: Drawable = background
         self.insert(*items)
 
     @property
     @abc.abstractmethod
-    def static_items(self) -> collections.abc.Iterable[T]:
+    def static_items(self) -> E:
         """
         Abstract property that returns all the static objects on the map.
 
         Returns:
-            Iterable[T]: An iterable collection of static objects.
+            E: A collection of static objects.
         """
         pass
 
@@ -41,10 +43,31 @@ class Map[T: Drawable](abc.ABC):
         pass
 
     @abc.abstractmethod
-    def render(self) -> None:
+    def render(self, destination: pygame.surface.Surface) -> None:
         """
         Renders the map by drawing the background and all the static items onto the provided surface.
-        """
-        self.background.draw()
 
-newmap = Map(Drawable(pygame.surface.Surface((0,0))))
+        Args:
+            destination (pygame.surface.Surface): The surface where the map must be rendered.
+        """
+        self.background.draw(destination)
+
+
+class TiledMap(Map[BaseSprite, dict[int, dict[tuple, BaseSprite]]]):
+    def __init__(self, tile_size: tuple[int, int], background: Drawable, *items: BaseSprite):
+        self._static_items: dict[int, dict[tuple, BaseSprite]] = {}
+        self.tile_size: tuple[int, int] = tile_size
+        super().__init__(background, *items)
+
+    @property
+    def static_items(self) -> dict[int, dict[tuple, BaseSprite]]:
+        return self._static_items
+
+    def insert(self, *items: BaseSprite) -> None:
+        self._static_items.update({item.layer: {item.position: item} for item in items} )
+
+    def render(self, destination: pygame.surface.Surface) -> None:
+        super().render(destination)
+        for layer in self.static_items:
+            for position in self.static_items[layer]:
+                self.static_items[layer][position].draw(destination)
