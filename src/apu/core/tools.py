@@ -1,13 +1,7 @@
 from time import perf_counter
-from enum import IntEnum
+from typing import Any
+
 import pygame
-
-
-class Directions(IntEnum):
-    UP = 0
-    LEFT = 1
-    DOWN = 2
-    RIGHT = 3
 
 
 class ImageTools:
@@ -20,7 +14,9 @@ class ImageTools:
         return image.copy()
 
     @staticmethod
-    def palette_swap(surf: pygame.Surface, old_color: pygame.Color, new_color: pygame.Color) -> pygame.Surface:
+    def palette_swap(
+        surf: pygame.Surface, old_color: pygame.Color, new_color: pygame.Color
+    ) -> pygame.Surface:
         copy = pygame.Surface(surf.get_size())
         copy.fill(new_color)
         surf.set_colorkey(old_color)
@@ -28,14 +24,16 @@ class ImageTools:
         return copy.convert_alpha()
 
     @staticmethod
-    def circle_surface(radius, color):
+    def circle_surface(radius: int, color: pygame.Color) -> pygame.Surface:
         surf = pygame.Surface((radius * 2, radius * 2))
         pygame.draw.circle(surf, color, (radius, radius), radius)
         surf.set_colorkey((0, 0, 0))
         return surf
 
     @staticmethod
-    def fps_surface(clock: pygame.time.Clock, font: pygame.font.Font, color: pygame.Color) -> pygame.Surface:
+    def fps_surface(
+        clock: pygame.time.Clock, font: pygame.font.Font, color: pygame.Color
+    ) -> pygame.Surface:
         fps = str(int(clock.get_fps()))
         return font.render(fps, True, color)
 
@@ -46,7 +44,7 @@ def delta_time(last_time: float, frame_rate: int = 60) -> tuple[float, float]:
     return dt, updated_last_time
 
 
-def translate_rect(tmx_object):
+def translate_rect(tmx_object: Any) -> pygame.Rect:
     points = tmx_object.as_points
     left = points[0][0]
     top = points[0][1]
