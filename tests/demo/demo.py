@@ -1,4 +1,3 @@
-import json
 import os
 from pathlib import Path
 import sys
@@ -11,72 +10,8 @@ from apu.core.spritesheet import AnimationSequence, SpriteSheet
 # Import the correct modules
 import apu.entities
 import apu.font
+from apu.loading import TiledMapLoader
 from apu.scene import TiledScene
-
-
-def load_map(map_path: str, assets_path: str) -> list[apu.entities.BaseSprite]:
-    with Path(map_path).open() as f:
-        json_data = json.load(f)
-    tile_size = json_data["tileheight"]
-    sheet = SpriteSheet(assets_path + "tileset.png")
-
-    def get_objects() -> dict[int, pygame.Rect]:
-        objects = {}
-        for tileset in json_data["tilesets"]:
-            for tile in tileset["tiles"]:
-                if "objectgroup" in tile:
-                    for obj in tile["objectgroup"]["objects"]:
-                        objects[tile["id"]] = pygame.rect.Rect(
-                            (obj["x"], obj["y"]), (obj["width"], obj["height"])
-                        )
-        return objects
-
-    def get_animations_by_id(tile_id: int) -> list[AnimationSequence]:
-        animations = []
-        for tileset in json_data["tilesets"]:
-            for tile in tileset["tiles"]:
-                if tile["id"] == tile_id and "animation" in tile:
-                    images = sheet.load_sequence(
-                        pygame.rect.Rect((), (tile_size, tile_size)),
-                        len(tile["animation"].values()),
-                        pygame.color.Color(0, 0, 0),
-                    )
-                    animations.append(
-                        AnimationSequence(images, True, tile["animation"][0]["duration"])
-                    )
-        return animations
-
-    def get_image_by_id(tile_id: int) -> pygame.Surface:
-        image_position = divmod(tile_id - 1, sheet.sheet.get_size()[0] // tile_size)
-        image_position = (image_position[1] * tile_size, image_position[0] * tile_size)
-
-        image = sheet.image_at(pygame.rect.Rect(image_position, (tile_size, tile_size)))
-        image.set_colorkey((0, 0, 0))
-        return image
-
-    sprites = []
-    hitboxes = get_objects()
-
-    for layer_index, layer in enumerate(json_data["layers"]):
-        for tile_index, tile_id in enumerate(layer["data"]):
-            if tile_id != 0:
-                image_position = divmod(tile_id - 1, sheet.sheet.get_size()[0] // tile_size)
-                image_position = (image_position[1] * tile_size, image_position[0] * tile_size)
-
-                tile_position = divmod(tile_index, json_data["width"])
-                tile_position = (tile_position[1] * tile_size, tile_position[0] * tile_size)
-
-                # tile animations
-
-                image = sheet.image_at(pygame.rect.Rect(image_position, (tile_size, tile_size)))
-                image.set_colorkey((0, 0, 0))
-                sprite = apu.entities.BaseSprite(
-                    position=tile_position, layer=layer_index, image=image
-                )
-                if tile_id - 1 in hitboxes:
-                    sprite.add_hitbox(box1=hitboxes[tile_id - 1])
-                sprites.append(sprite)
-    return sprites
 
 
 class Game:
@@ -113,9 +48,9 @@ class Game:
         self.font = apu.font.Font(self._assets_path + "small_font.png", pygame.Color(0, 0, 0))
         self.running = False
 
-        self.tiled_map = TiledScene(
-            16, *load_map(self._assets_path + "map.json", self._assets_path)
-        )
+        map_sprites = TiledMapLoader().load(self._assets_path + "map.json", self._assets_path)
+        self.tiled_map = TiledScene(16, *map_sprites)
+
         self.player = apu.entities.MovableSprite(
             position=(304, 164),
             speed=2,
@@ -130,6 +65,12 @@ class Game:
             box1=pygame.rect.Rect((0, 0), (8, 16)), box2=pygame.rect.Rect((8, 0), (8, 16))
         )
         pygame.display.set_caption("APU demo game")
+
+        for tile in map_sprites:
+            print(f"tile position: {tile.position}")
+
+            for hitbox in tile.hitboxes.values():
+                print(f"hitbox: {hitbox}")
 
     def handle_events(self) -> None:
         for event in pygame.event.get():
