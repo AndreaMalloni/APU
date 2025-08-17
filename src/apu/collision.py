@@ -1,6 +1,6 @@
 # import threading
 
-# import pygame
+import pygame
 
 # from APU.scene import Scene
 
@@ -56,3 +56,33 @@
 
 #     def pause(self, time):
 #         pass
+
+
+class HitBox:
+    def __init__(self, rect: pygame.rect.Rect, visible: bool = False) -> None:
+        self._body = None
+        self.rect = rect
+        self.visible = visible
+        self.border_width = 1
+        self.border_color = (255, 0, 0)
+
+    def absolute_rect(self, offset: tuple[int, int]) -> pygame.Rect:
+        """Returns an offsetted rect object, based on the entity position."""
+        return self.rect.move(offset)
+
+    def draw(self, surface: pygame.surface.Surface) -> None:
+        if self.visible:
+            pygame.draw.rect(
+                surface,
+                self.border_color,
+                self.absolute_rect(self._body.entity.position),
+                width=self.border_width,
+            )
+
+    def __str__(self) -> str:
+        return f"""
+        Rect: {self.rect} 
+        Visible: {self.visible} 
+        Border width: {self.border_width} 
+        Border color: {self.border_color} 
+        """

@@ -4,13 +4,13 @@ import sys
 
 import pygame
 
+from apu.collision import HitBox
 from apu.core.enums import Directions
 from apu.core.spritesheet import AnimationSequence, SpriteSheet
-
-# Import the correct modules
-import apu.entities
 import apu.font
 from apu.loading import TiledMapLoader
+from apu.objects.components import AnimationComponent, MovementComponent, SolidBodyComponent
+import apu.objects.entities
 from apu.scene import TiledScene
 
 
@@ -19,25 +19,33 @@ class Game:
         pygame.init()
         self._assets_path = str(Path(__file__).parent / "assets") + os.sep
         self.screen = pygame.display.set_mode((1280, 720), flags=pygame.SCALED, vsync=1)
-        self.sheet = SpriteSheet(self._assets_path + "characters.png")
+        self.player_sheet = SpriteSheet(self._assets_path + "characters.png")
         self.assets = {
             "player_idle_right": AnimationSequence(
-                self.sheet.load_sequence(pygame.Rect(0, 14, 16, 19), 4, pygame.Color(0, 0, 0)),
+                self.player_sheet.load_sequence(
+                    pygame.Rect(0, 14, 16, 19), 4, pygame.Color(0, 0, 0)
+                ),
                 True,
                 120,
             ),
             "player_idle_left": AnimationSequence(
-                self.sheet.load_sequence(pygame.Rect(0, 14, 16, 19), 4, pygame.Color(0, 0, 0)),
+                self.player_sheet.load_sequence(
+                    pygame.Rect(0, 14, 16, 19), 4, pygame.Color(0, 0, 0)
+                ),
                 True,
                 120,
             ).mirror(),
             "player_walk_right": AnimationSequence(
-                self.sheet.load_sequence(pygame.Rect(0, 44, 16, 19), 4, pygame.Color(0, 0, 0)),
+                self.player_sheet.load_sequence(
+                    pygame.Rect(0, 44, 16, 19), 4, pygame.Color(0, 0, 0)
+                ),
                 True,
                 120,
             ),
             "player_walk_left": AnimationSequence(
-                self.sheet.load_sequence(pygame.Rect(0, 44, 16, 19), 4, pygame.Color(0, 0, 0)),
+                self.player_sheet.load_sequence(
+                    pygame.Rect(0, 44, 16, 19), 4, pygame.Color(0, 0, 0)
+                ),
                 True,
                 120,
             ).mirror(),
@@ -51,26 +59,27 @@ class Game:
         map_sprites = TiledMapLoader().load(self._assets_path + "map.json", self._assets_path)
         self.tiled_map = TiledScene(16, *map_sprites)
 
-        self.player = apu.entities.MovableSprite(
-            position=(304, 164),
-            speed=2,
+        self.player = apu.objects.entities.BaseSprite(position=(304, 164))
+
+        self.player.add_component(MovementComponent(speed=2))
+
+        self.player.add_component(
+            AnimationComponent(
+                idle_right=self.assets["player_idle_right"],
+                idle_left=self.assets["player_idle_left"],
+                walk_right=self.assets["player_walk_right"],
+                walk_left=self.assets["player_walk_left"],
+            )
         )
-        self.player.add_animation(
-            idle_right=self.assets["player_idle_right"],
-            idle_left=self.assets["player_idle_left"],
-            walk_right=self.assets["player_walk_right"],
-            walk_left=self.assets["player_walk_left"],
+
+        self.player.add_component(
+            SolidBodyComponent(
+                box1=HitBox(pygame.rect.Rect((0, 0), (8, 16))),
+                box2=HitBox(pygame.rect.Rect((8, 0), (8, 16))),
+            )
         )
-        self.player.add_hitbox(
-            box1=pygame.rect.Rect((0, 0), (8, 16)), box2=pygame.rect.Rect((8, 0), (8, 16))
-        )
+
         pygame.display.set_caption("APU demo game")
-
-        for tile in map_sprites:
-            print(f"tile position: {tile.position}")
-
-            for hitbox in tile.hitboxes.values():
-                print(f"hitbox: {hitbox}")
 
     def handle_events(self) -> None:
         for event in pygame.event.get():
@@ -88,7 +97,10 @@ class Game:
                 if event.key == pygame.K_f:
                     pygame.display.toggle_fullscreen()
                 if event.key == pygame.K_h:
-                    self.tiled_map.show_hitbox = not self.tiled_map.show_hitbox
+                     for sprite in self.tiled_map:
+                        if hasattr(sprite, "hitboxes"):
+                            for hitbox in sprite.hitboxes.values():
+                                hitbox.visible = not hitbox.visible
                 if event.key == pygame.K_q:
                     self.running = False
             if event.type == pygame.KEYUP:

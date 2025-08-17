@@ -7,8 +7,10 @@ import xml.etree.ElementTree as ET
 import pygame
 from typing_extensions import override
 
+from apu.collision import HitBox
 from apu.core.spritesheet import AnimationSequence, SpriteSheet
-from apu.entities import BaseSprite
+from apu.objects.components import AnimationComponent, SolidBodyComponent
+from apu.objects.entities import BaseSprite
 
 __all__ = ["JSONMapLoader", "MapLoader", "TMXMapLoader", "TiledMapLoader"]
 
@@ -144,13 +146,9 @@ class JSONMapLoader(MapLoader):
             Complete path to the tileset file
         """
         tileset = json_data["tilesets"][0]
-        if "image" in tileset:
-            return str(assets_path + tileset["image"])
-        else:
-            # Fallback for external tilesets
-            return str(assets_path + "tileset.png")
+        return str(assets_path + tileset["image"])
 
-    def _load_objects(self, json_data: dict[str, Any]) -> dict[int, pygame.Rect]:
+    def _load_objects(self, json_data: dict[str, Any]) -> dict[int, HitBox]:
         """Loads object information (hitboxes) from JSON.
 
         Args:
@@ -161,11 +159,12 @@ class JSONMapLoader(MapLoader):
         """
         objects = {}
         for tileset in json_data["tilesets"]:
+            firstgid = tileset["firstgid"]
             for tile in tileset.get("tiles", []):
                 if "objectgroup" in tile:
                     for obj in tile["objectgroup"]["objects"]:
-                        objects[tile["id"]] = pygame.Rect(
-                            (obj["x"], obj["y"]), (obj["width"], obj["height"])
+                        objects[firstgid + tile["id"]] = HitBox(
+                            pygame.Rect((obj["x"], obj["y"]), (obj["width"], obj["height"]))
                         )
         return objects
 
@@ -184,31 +183,27 @@ class JSONMapLoader(MapLoader):
         """
         animations = {}
         for tileset in json_data["tilesets"]:
+            firstgid = tileset["firstgid"]
             for tile in tileset.get("tiles", []):
                 if "animation" in tile:
-                    tile_id = tile["id"]
+                    tile_id = firstgid + tile["id"]
                     anim_frames = []
-
                     for frame in tile["animation"]:
-                        frame_id = frame["tileid"]
-
-                        image_position = divmod(frame_id, sheet.sheet.get_size()[0] // tile_size)
+                        frame_id = firstgid + frame["tileid"]
+                        image_position = divmod(frame_id - firstgid, sheet.sheet.get_size()[0] // tile_size)
                         image_position = (
                             image_position[1] * tile_size,
                             image_position[0] * tile_size,
                         )
-
                         frame_image = sheet.image_at(
                             pygame.Rect(image_position, (tile_size, tile_size))
                         )
                         frame_image.set_colorkey((0, 0, 0))
                         anim_frames.append(frame_image)
-
                     if anim_frames:
                         animations[tile_id] = [
                             AnimationSequence(anim_frames, True, tile["animation"][0]["duration"])
                         ]
-
         return animations
 
     def _create_layer_sprites(
@@ -218,7 +213,7 @@ class JSONMapLoader(MapLoader):
         sheet: SpriteSheet,
         tile_size: int,
         layer_index: int,
-        hitboxes: dict[int, pygame.Rect],
+        hitboxes: dict[int, HitBox],
         animations: dict[int, list[AnimationSequence]],
     ) -> list[BaseSprite]:
         """Creates sprites for a specific layer.
@@ -251,10 +246,15 @@ class JSONMapLoader(MapLoader):
                 sprite = BaseSprite(position=tile_position, layer=layer_index, image=image)
 
                 if tile_id in hitboxes:
-                    sprite.add_hitbox(box1=hitboxes[tile_id])
+                    original_hitbox = hitboxes[tile_id]
+                    # Crea una nuova istanza di HitBox per ogni sprite.
+                    new_hitbox = HitBox(original_hitbox.rect.copy())
+                    body_component = SolidBodyComponent(box1=new_hitbox)
+                    sprite.add_component(body_component)
 
                 if tile_id in animations:
-                    sprite.add_animation(animated=animations[tile_id][0])
+                    anim_component = AnimationComponent(animation1=animations[tile_id][0])
+                    sprite.add_component(anim_component)
 
                 sprites.append(sprite)
 
@@ -271,8 +271,10 @@ class JSONMapLoader(MapLoader):
         Returns:
             Pygame surface of the tile
         """
+        firstgid = 1 
+        image_id = tile_id - firstgid
 
-        image_position = divmod(tile_id - 1, sheet.sheet.get_size()[0] // tile_size)
+        image_position = divmod(image_id, sheet.sheet.get_size()[0] // tile_size)
         image_position = (
             image_position[1] * tile_size,
             image_position[0] * tile_size,
@@ -346,16 +348,31 @@ class TMXMapLoader(MapLoader):
         # Fallback for external tilesets
         return str(assets_path + "tileset.png")
 
-    def _load_objects_from_tmx(self, root: ET.Element) -> dict[int, pygame.Rect]:
+    def _get_firstgid(self, root: ET.Element) -> int:
+        """Helper to get the firstgid of the tileset from TMX.
+
+        Args:
+            root: Root element of TMX
+
+        Returns:
+            The firstgid of the tileset.
+        """
+        tileset = root.find("tileset")
+        if tileset is None:
+            raise ValueError("No tileset found in TMX file")
+        return int(tileset.get("firstgid", 1) or 1)
+
+    def _load_objects_from_tmx(self, root: ET.Element) -> dict[int, HitBox]:
         """Loads object information from TMX.
 
         Args:
             root: Root element of TMX
 
         Returns:
-            Dictionary mapping tile ID -> pygame.Rect for hitboxes
+            Dictionary mapping tile ID -> HitBox for hitboxes
         """
         objects = {}
+        firstgid = self._get_firstgid(root)
 
         for tileset in root.findall("tileset"):
             for tile in tileset.findall("tile"):
@@ -369,7 +386,7 @@ class TMXMapLoader(MapLoader):
                         width = float(obj.get("width", 0) or 0)
                         height = float(obj.get("height", 0) or 0)
 
-                        objects[tile_id] = pygame.Rect(x, y, width, height)
+                        objects[firstgid + tile_id] = HitBox(pygame.Rect(x, y, width, height))
 
         return objects
 
@@ -388,6 +405,7 @@ class TMXMapLoader(MapLoader):
             Dictionary mapping tile ID -> list of AnimationSequence
         """
         animations = {}
+        firstgid = self._get_firstgid(root)
 
         for tileset in root.findall("tileset"):
             for tile in tileset.findall("tile"):
@@ -401,7 +419,7 @@ class TMXMapLoader(MapLoader):
                     for frame in animation.findall("frame"):
                         frame_id = int(frame.get("tileid", 0) or 0)
                         frame_duration = int(frame.get("duration", 100) or 100)
-                        duration = frame_duration  # Use the duration of the last frame
+                        duration = frame_duration
 
                         image_position = divmod(frame_id, sheet.sheet.get_size()[0] // tile_width)
                         image_position = (
@@ -416,7 +434,8 @@ class TMXMapLoader(MapLoader):
                         anim_frames.append(frame_image)
 
                     if anim_frames:
-                        animations[tile_id] = [AnimationSequence(anim_frames, True, duration)]
+                        # Usa il GID come chiave per coerenza con i dati del livello
+                        animations[firstgid + tile_id] = [AnimationSequence(anim_frames, True, duration)]
 
         return animations
 
@@ -428,7 +447,7 @@ class TMXMapLoader(MapLoader):
         tile_height: int,
         layer_index: int,
         sheet: SpriteSheet,
-        hitboxes: dict[int, pygame.Rect],
+        hitboxes: dict[int, HitBox],
         animations: dict[int, list[AnimationSequence]],
     ) -> list[BaseSprite]:
         """Creates sprites for a specific layer from TMX.
@@ -461,18 +480,16 @@ class TMXMapLoader(MapLoader):
             tile_data = [int(x) for x in data.text.strip().split(",")]
         elif encoding == "base64":
             import base64
+            import gzip
             import struct
+            import zlib
 
             if data.text is None:
                 return sprites
             decoded_data = base64.b64decode(data.text.strip())
             if compression == "gzip":
-                import gzip
-
                 decoded_data = gzip.decompress(decoded_data)
             elif compression == "zlib":
-                import zlib
-
                 decoded_data = zlib.decompress(decoded_data)
 
             # Decode data as 32-bit integer array
@@ -498,10 +515,14 @@ class TMXMapLoader(MapLoader):
                 sprite = BaseSprite(position=tile_position, layer=layer_index, image=image)
 
                 if tile_id in hitboxes:
-                    sprite.add_hitbox(box1=hitboxes[tile_id])
+                    original_hitbox = hitboxes[tile_id]
+                    new_hitbox = HitBox(original_hitbox.rect.copy())
+                    body_component = SolidBodyComponent(box1=new_hitbox)
+                    sprite.add_component(body_component)
 
                 if tile_id in animations:
-                    sprite.add_animation(animated=animations[tile_id][0])
+                    anim_component = AnimationComponent(animation1=animations[tile_id][0])
+                    sprite.add_component(anim_component)
 
                 sprites.append(sprite)
 
@@ -521,8 +542,10 @@ class TMXMapLoader(MapLoader):
         Returns:
             Pygame surface of the tile
         """
+        firstgid = 1 
+        image_id = tile_id - firstgid
 
-        image_position = divmod(tile_id - 1, sheet.sheet.get_size()[0] // tile_width)
+        image_position = divmod(image_id, sheet.sheet.get_size()[0] // tile_width)
         image_position = (
             image_position[1] * tile_width,
             image_position[0] * tile_height,

@@ -5,7 +5,7 @@ import pygame
 from typing_extensions import override
 
 from apu.core.enums import NEIGHBOUR_MATRIX
-from apu.entities import BaseSprite
+from apu.objects.entities import BaseSprite
 
 
 class Scene:
@@ -32,11 +32,7 @@ class TiledScene(Scene):
     def __init__(self, tile_size: int, *items: BaseSprite) -> None:
         self.tiles: dict[int, dict[tuple[int, int], BaseSprite]] = {}
         self.tile_size = tile_size
-        self.show_hitbox = False
         self.insert(*items)
-
-        self.__current_layer = 0
-        self.__current_position = 0
 
     @override
     def insert(self, *items: BaseSprite) -> None:
@@ -50,10 +46,6 @@ class TiledScene(Scene):
         for layer in self.tiles:
             for position in self.tiles[layer]:
                 self.tiles[layer][position].draw(window)
-
-                if self.show_hitbox:
-                    for hitbox in self.tiles[layer][position].hitboxes.values():
-                        pygame.draw.rect(window, (255, 0, 0), hitbox, width=1)
 
     @override
     def update(self, offset: tuple[int, int] = (0, 0)) -> None:
@@ -76,22 +68,19 @@ class TiledScene(Scene):
 
     @override
     def __iter__(self) -> Iterator[BaseSprite]:
-        return self
-
+        seen = set()
+        for layer in sorted(self.tiles.keys()):
+            for sprite in self.tiles[layer].values():
+                if sprite not in seen:
+                    seen.add(sprite)
+                    yield sprite
+    
     @override
-    def __next__(self) -> BaseSprite:
-        current_layer = list(self.tiles.keys())[self.__current_layer]
+    def __str__(self) -> str:
+        total_sprites = len(list(self))
+        return f"""
+        Scene: {super().__str__()}
+        Tile size: {self.tile_size}
+        Number of tiles = {total_sprites}
+        """ 
 
-        if self.__current_layer < len(self.tiles) - 1:
-            self.__current_layer += 1
-        else:
-            self.__current_layer = 0
-            self.__current_position += 1
-
-        if self.__current_position >= len(self.tiles[current_layer]):
-            raise StopIteration
-
-        current_position = list(self.tiles[current_layer].keys())[self.__current_position]
-        current_sprite = self.tiles[current_layer][current_position]
-
-        return current_sprite
