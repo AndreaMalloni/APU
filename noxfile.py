@@ -9,7 +9,7 @@ nox.options.default_venv_backend = "uv"
 nox.options.sessions = ["lint", "type_check", "test", "docs"]
 
 
-@session(python=["3.9", "3.10", "3.11", "3.12", "3.13"])
+@session(python=["3.10", "3.11", "3.12", "3.13"])
 def test(s: Session) -> None:
     s.run_install(
         "uv",

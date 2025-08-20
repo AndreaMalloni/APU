@@ -190,7 +190,9 @@ class JSONMapLoader(MapLoader):
                     anim_frames = []
                     for frame in tile["animation"]:
                         frame_id = firstgid + frame["tileid"]
-                        image_position = divmod(frame_id - firstgid, sheet.sheet.get_size()[0] // tile_size)
+                        image_position = divmod(
+                            frame_id - firstgid, sheet.sheet.get_size()[0] // tile_size
+                        )
                         image_position = (
                             image_position[1] * tile_size,
                             image_position[0] * tile_size,
@@ -271,7 +273,7 @@ class JSONMapLoader(MapLoader):
         Returns:
             Pygame surface of the tile
         """
-        firstgid = 1 
+        firstgid = 1
         image_id = tile_id - firstgid
 
         image_position = divmod(image_id, sheet.sheet.get_size()[0] // tile_size)
@@ -435,7 +437,9 @@ class TMXMapLoader(MapLoader):
 
                     if anim_frames:
                         # Usa il GID come chiave per coerenza con i dati del livello
-                        animations[firstgid + tile_id] = [AnimationSequence(anim_frames, True, duration)]
+                        animations[firstgid + tile_id] = [
+                            AnimationSequence(anim_frames, True, duration)
+                        ]
 
         return animations
 
@@ -542,7 +546,7 @@ class TMXMapLoader(MapLoader):
         Returns:
             Pygame surface of the tile
         """
-        firstgid = 1 
+        firstgid = 1
         image_id = tile_id - firstgid
 
         image_position = divmod(image_id, sheet.sheet.get_size()[0] // tile_width)

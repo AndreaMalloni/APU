@@ -1,43 +1,54 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections import UserDict
-from typing import Optional, override
+from typing import TYPE_CHECKING, Any
 
 from pygame.surface import Surface
+from typing_extensions import override
 
 from apu.collision import HitBox
 from apu.core.enums import Directions
 from apu.core.spritesheet import AnimationSequence
 
+if TYPE_CHECKING:
+    from apu.objects.entities import BaseSprite
 
-class HitBoxDict(UserDict):
-    def __init__(self, body: "SolidBodyComponent", *args, **kwargs):
-        self._body = body  # salvi il riferimento al componente
+
+# Correzione 1: Specificare i parametri di tipo per UserDict
+class HitBoxDict(UserDict[str, HitBox]):
+    def __init__(self, body: SolidBodyComponent, *args: Any, **kwargs: Any) -> None:
+        self._body: SolidBodyComponent = body
         super().__init__(*args, **kwargs)
 
-    def __setitem__(self, key: str, value: "HitBox") -> None:
+        for value in self.values():
+            value._body = self._body
+
+    @override
+    def __setitem__(self, key: str, value: HitBox) -> None:
         value._body = self._body
         super().__setitem__(key, value)
 
 
 class BaseComponent(ABC):
     def __init__(self) -> None:
-        self.entity = None
+        self.entity: BaseSprite | None = None
 
     @abstractmethod
     def on_added(self) -> None:
-        """Chiamato quando il componente viene aggiunto a un'entità"""
+        """Called when a component is added to an entity"""
 
     @abstractmethod
     def on_removed(self) -> None:
-        """Chiamato quando il componente viene rimosso"""
+        """Called when the component is removed"""
 
     @abstractmethod
     def update(self) -> None:
-        """Aggiornamento opzionale"""
+        """Optional state update"""
 
     @abstractmethod
     def draw(self, surface: Surface) -> None:
-        """Render opzionale"""
+        """Optional rendering"""
 
 
 class MovementComponent(BaseComponent):
@@ -96,6 +107,7 @@ class MovementComponent(BaseComponent):
 
     @override
     def update(self) -> None:
+        # Correzione: Aggiungere un controllo per l'attributo entity
         if self.is_moving and self.entity is not None:
             x_movement = (self._state[Directions.LEFT][0] - self._state[Directions.RIGHT][0]) * (
                 self.speed + self.acceleration
@@ -120,10 +132,10 @@ class AnimationComponent(BaseComponent):
     def __init__(self, **sequences: AnimationSequence) -> None:
         super().__init__()
         self.animations: dict[str, AnimationSequence] = {}
-        self.current_sequence: Optional[str] = None
+        self.current_sequence: str | None = None
 
         self.add_animation(**sequences)
-        self.__fallBackImage: Optional[Surface] = None
+        self.__fallBackImage: Surface | None = None
 
     def add_animation(self, **sequences: AnimationSequence) -> None:
         """Updates the animations dict with any given animation sequence."""
@@ -149,7 +161,7 @@ class AnimationComponent(BaseComponent):
         if self.current_sequence is not None:
             self.animations[self.current_sequence].__iter__()
 
-    def get_animation_speed(self, animation_key: Optional[str] = None) -> int:
+    def get_animation_speed(self, animation_key: str | None = None) -> int:
         if animation_key is None:
             animation_key = self.current_sequence
 
@@ -158,7 +170,7 @@ class AnimationComponent(BaseComponent):
 
         return self.animations[animation_key].frame_duration
 
-    def set_animation_speed(self, speed: int, animation_key: Optional[str] = None) -> None:
+    def set_animation_speed(self, speed: int, animation_key: str | None = None) -> None:
         if animation_key is None:
             animation_key = self.current_sequence
 
@@ -168,7 +180,7 @@ class AnimationComponent(BaseComponent):
         self.animations[animation_key].frame_duration = speed
 
     def pause(
-        self, active: bool, animation_seq: Optional[str] = None, timer: Optional[int] = None
+        self, active: bool, animation_seq: str | None = None, timer: int | None = None
     ) -> None:
         """
         Pauses or resumes the animation sequence.
@@ -183,7 +195,9 @@ class AnimationComponent(BaseComponent):
 
     @override
     def on_added(self) -> None:
-        self.__fallBackImage = self.entity.image
+        # Correzione 4: Aggiungere un controllo per l'attributo entity
+        if self.entity is not None:
+            self.__fallBackImage = self.entity.image
 
     @override
     def on_removed(self) -> None:
@@ -197,9 +211,12 @@ class AnimationComponent(BaseComponent):
 
         if any(self.animations) and self.current_sequence is not None:
             try:
-                self.entity.image = self.animations[self.current_sequence].__next__()
+                # Correzione 5: Aggiungere un controllo per l'attributo entity
+                if self.entity is not None:
+                    self.entity.image = self.animations[self.current_sequence].__next__()
             except KeyError:
-                self.image = self.__fallBackImage
+                if self.entity is not None:
+                    self.entity.image = self.__fallBackImage
 
     @override
     def draw(self, surface: Surface) -> None:
@@ -209,25 +226,27 @@ class AnimationComponent(BaseComponent):
 class SolidBodyComponent(BaseComponent):
     def __init__(self, **boxes: HitBox) -> None:
         super().__init__()
-        self.hitboxes: dict[str, HitBox] = HitBoxDict(self, boxes)
+        self.hitboxes: HitBoxDict = HitBoxDict(self, boxes)
 
     @property
     def solid(self) -> bool:
         return bool(self.hitboxes)
 
-    def collides_with(self, other: "SolidBodyComponent") -> list[tuple[HitBox, HitBox]]:
+    def collides_with(self, other: SolidBodyComponent) -> list[tuple[HitBox, HitBox]]:
         """
         Checks all collisions between this component's hitboxes and another's. \n
         Returns a list of tuples of all colliding hitboxes.
         """
-        collisions = []
+        collisions: list[tuple[HitBox, HitBox]] = []
 
         for hitbox_a in self.hitboxes.values():
-            abs_a = hitbox_a.absolute_rect(self.entity.position)
-            for hitbox_b in other.hitboxes.values():
-                abs_b = hitbox_b.absolute_rect(other.entity.position)
-                if abs_a.colliderect(abs_b):
-                    collisions.append((hitbox_a, hitbox_b))
+            if self.entity is not None:
+                abs_a = hitbox_a.absolute_rect(self.entity.position)
+                for hitbox_b in other.hitboxes.values():
+                    if other.entity is not None:
+                        abs_b = hitbox_b.absolute_rect(other.entity.position)
+                        if abs_a.colliderect(abs_b):
+                            collisions.append((hitbox_a, hitbox_b))
         return collisions
 
     @override
@@ -247,8 +266,8 @@ class SolidBodyComponent(BaseComponent):
         for hitbox in self.hitboxes.values():
             hitbox.draw(surface)
 
+    @override
     def __str__(self) -> str:
         return f"""Body component: {super().__str__()}
         Hitbox list:
         {"".join(str(hitbox) for hitbox in self.hitboxes.values())}"""
-

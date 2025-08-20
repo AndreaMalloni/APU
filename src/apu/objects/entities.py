@@ -1,6 +1,7 @@
-from typing import Any, Optional
+from typing import Any
 
 import pygame
+from typing_extensions import override
 
 from apu.objects.components import BaseComponent
 
@@ -12,7 +13,7 @@ class BaseSprite(pygame.sprite.Sprite):
     """
 
     def __init__(
-        self, position: tuple[int, int], layer: int = 0, image: Optional[pygame.Surface] = None
+        self, position: tuple[int, int], layer: int = 0, image: pygame.Surface | None = None
     ) -> None:
         """Constructs a sprite object with basic functionality.
 
@@ -83,14 +84,16 @@ class BaseSprite(pygame.sprite.Sprite):
         for component in self.components.values():
             component.draw(window)
 
+    @override
     def update(self) -> None:
         for component in self.components.values():
             component.update()
 
+    @override
     def __str__(self) -> str:
         result = [
             f"BaseSprite(position={self.position}, layer={self._layer}, size={self.size})",
-            "Components:"
+            "Components:",
         ]
         if self.components:
             for name, component in self.components.items():

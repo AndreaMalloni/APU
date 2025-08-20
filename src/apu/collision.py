@@ -1,6 +1,14 @@
 # import threading
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pygame
+from typing_extensions import override
+
+if TYPE_CHECKING:
+    from apu.objects.components import SolidBodyComponent
 
 # from APU.scene import Scene
 
@@ -60,7 +68,7 @@ import pygame
 
 class HitBox:
     def __init__(self, rect: pygame.rect.Rect, visible: bool = False) -> None:
-        self._body = None
+        self._body: SolidBodyComponent | None = None
         self.rect = rect
         self.visible = visible
         self.border_width = 1
@@ -71,7 +79,7 @@ class HitBox:
         return self.rect.move(offset)
 
     def draw(self, surface: pygame.surface.Surface) -> None:
-        if self.visible:
+        if self.visible and self._body is not None and self._body.entity is not None:
             pygame.draw.rect(
                 surface,
                 self.border_color,
@@ -79,6 +87,7 @@ class HitBox:
                 width=self.border_width,
             )
 
+    @override
     def __str__(self) -> str:
         return f"""
         Rect: {self.rect} 

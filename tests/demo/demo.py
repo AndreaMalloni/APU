@@ -97,7 +97,7 @@ class Game:
                 if event.key == pygame.K_f:
                     pygame.display.toggle_fullscreen()
                 if event.key == pygame.K_h:
-                     for sprite in self.tiled_map:
+                    for sprite in self.tiled_map:
                         if hasattr(sprite, "hitboxes"):
                             for hitbox in sprite.hitboxes.values():
                                 hitbox.visible = not hitbox.visible

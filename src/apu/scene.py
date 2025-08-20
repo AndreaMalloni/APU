@@ -74,7 +74,7 @@ class TiledScene(Scene):
                 if sprite not in seen:
                     seen.add(sprite)
                     yield sprite
-    
+
     @override
     def __str__(self) -> str:
         total_sprites = len(list(self))
@@ -82,5 +82,4 @@ class TiledScene(Scene):
         Scene: {super().__str__()}
         Tile size: {self.tile_size}
         Number of tiles = {total_sprites}
-        """ 
-
+        """
