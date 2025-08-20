@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 import pygame
 
@@ -16,7 +15,7 @@ class Font:
     def __init__(
         self,
         path: str,
-        color_key: Optional[pygame.Color] = None,
+        color_key: pygame.Color | None = None,
         spacing: int = 1,
         rgba_separator: int = 127,
     ) -> None:
@@ -165,7 +164,7 @@ class Font:
         surf: pygame.Surface,
         text: str,
         position: tuple[int, int],
-        color: Optional[pygame.Color] = None,
+        color: pygame.Color | None = None,
     ) -> None:
         """Renders the given text using characters from the font image.
 

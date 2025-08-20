@@ -1,10 +1,13 @@
 from collections.abc import Generator
-from typing import Any
 
 import pygame
 import pytest
 
-from apu.entities import BaseSprite, MovableSprite
+from apu.collision import HitBox
+from apu.core.enums import Directions
+from apu.core.spritesheet import AnimationSequence
+from apu.objects.components import AnimationComponent, MovementComponent, SolidBodyComponent
+from apu.objects.entities import BaseSprite
 
 
 @pytest.fixture(autouse=True)
@@ -16,55 +19,87 @@ def pygame_init() -> Generator[None, None, None]:
 
 def test_basesprite_creation() -> None:
     sprite = BaseSprite(position=(10, 20), layer=1)
-    assert sprite.position == (10, 20)
+    assert sprite.x == 10
+    assert sprite.y == 20
     assert sprite._layer == 1
     assert isinstance(sprite.image, pygame.Surface)
-    assert sprite.size == sprite.image.get_size()
-    assert isinstance(sprite.computed_rect, pygame.Rect)
-    assert sprite.hitboxes == {}
-    assert not sprite.solid
+    assert sprite.computed_rect.size == sprite.image.get_size()
+    assert sprite.components == {}
 
 
-def test_basesprite_hitbox() -> None:
+def test_basesprite_add_and_get_component() -> None:
+    sprite = BaseSprite(position=(0, 0))
+    solid_body_component = SolidBodyComponent()
+    sprite.add_component(solid_body_component)
+
+    assert sprite.get_component(SolidBodyComponent)
+    assert sprite.get_component(SolidBodyComponent) is solid_body_component
+    assert sprite.get_component(MovementComponent) is None
+
+    assert solid_body_component.entity is sprite
+
+
+def test_basesprite_remove_component() -> None:
+    sprite = BaseSprite(position=(0, 0))
+    solid_body_component = SolidBodyComponent()
+    sprite.add_component(solid_body_component)
+
+    assert sprite.get_component(SolidBodyComponent)
+
+    sprite.remove_component(SolidBodyComponent)
+
+    assert not sprite.get_component(SolidBodyComponent)
+
+
+def test_solidbody_component_hitbox_management() -> None:
     sprite = BaseSprite(position=(0, 0))
     rect = pygame.Rect(0, 0, 10, 10)
-    sprite.add_hitbox(box1=rect)
-    assert "box1" in sprite.hitboxes
-    assert sprite.solid
+    hitbox = HitBox(rect)
+    solid_body_component = SolidBodyComponent(box1=hitbox)
+
+    sprite.add_component(solid_body_component)
+
+    assert "box1" in solid_body_component.hitboxes
+    assert solid_body_component.solid
 
 
-def test_basesprite_animation() -> None:
+def test_animation_component_management() -> None:
     sprite = BaseSprite(position=(0, 0))
 
-    # Fake AnimationSequence for test
-    class DummyAnim:
-        def __iter__(self) -> Any:
-            return self
+    class DummyAnim(AnimationSequence):
+        def __init__(self) -> None:
+            dummy_surface = pygame.Surface((1, 1))
+            super().__init__(frames=[dummy_surface], loop=True, frame_duration=5)
 
-        frame_duration = 5
+    anim_sequence = DummyAnim()
+    animation_component = AnimationComponent(idle=anim_sequence)
 
-    anim = DummyAnim()
-    # Note: This will fail type checking but works at runtime
-    sprite.add_animation(idle=anim)
-    assert "idle" in sprite.animations
-    assert sprite.current_sequence == "idle"
-    assert sprite.get_animation_speed() == 5
-    sprite.set_animation_speed(10)
-    assert sprite.get_animation_speed() == 10
-    sprite.switch_to("idle")
-    assert sprite.current_sequence == "idle"
+    sprite.add_component(animation_component)
+
+    assert "idle" in animation_component.animations
+    assert animation_component.current_sequence == "idle"
+    assert animation_component.get_animation_speed() == 5
+
+    animation_component.set_animation_speed(10)
+    assert animation_component.get_animation_speed() == 10
+
+    animation_component.switch_to("idle")
+    assert animation_component.current_sequence == "idle"
 
 
-def test_movablesprite_move_and_stop() -> None:
-    from apu.core.enums import Directions
+def test_movement_component_movement() -> None:
+    sprite = BaseSprite(position=(0, 0))
+    movement_component = MovementComponent(speed=2)
+    sprite.add_component(movement_component)
 
-    sprite = MovableSprite(position=(0, 0), speed=2)
-    sprite.move(Directions.RIGHT)
-    assert Directions.RIGHT in sprite.movements
-    sprite.stop(Directions.RIGHT)
-    assert Directions.RIGHT not in sprite.movements
-    # Move with dt
-    sprite.move(Directions.DOWN, dt=2.0)
-    assert Directions.DOWN in sprite.movements
-    sprite.stop(Directions.DOWN)
-    assert Directions.DOWN not in sprite.movements
+    movement_component.move(Directions.RIGHT)
+    assert Directions.RIGHT in movement_component.movements
+
+    movement_component.stop(Directions.RIGHT)
+    assert Directions.RIGHT not in movement_component.movements
+
+    movement_component.move(Directions.DOWN, dt=2.0)
+    assert Directions.DOWN in movement_component.movements
+
+    movement_component.stop(Directions.DOWN)
+    assert Directions.DOWN not in movement_component.movements
