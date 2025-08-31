@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from apu.objects.entities import BaseSprite
 
 
-# Correzione 1: Specificare i parametri di tipo per UserDict
 class HitBoxDict(UserDict[str, HitBox]):
     def __init__(self, body: SolidBodyComponent, *args: Any, **kwargs: Any) -> None:
         self._body: SolidBodyComponent = body
