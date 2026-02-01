@@ -10,14 +10,15 @@ Questo esempio mostra:
 - Abilitazione/disabilitazione eventi
 """
 
-import pygame
-import sys
 from pathlib import Path
+import sys
+
+import pygame
 
 # Aggiungi il path del progetto per importare APU
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from apu.events import event_dispatcher, EventCondition
+from apu.events import EventCondition, event_dispatcher
 
 
 class GameState:

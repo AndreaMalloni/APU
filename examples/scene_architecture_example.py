@@ -12,29 +12,27 @@ Questo esempio mostra:
 - Scene personalizzate
 """
 
-import pygame
-import sys
 import math
 from pathlib import Path
-from typing import Optional
+import sys
+
+import pygame
 
 # Aggiungi il path del progetto per importare APU
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from apu.events import event_dispatcher
 from apu.scene import (
-    Scene,
-    SceneManager,
-    scene_manager,
-    RenderLayer,
-    Camera,
-    SceneState,
+    SCENE_CUSTOM,
     SCENE_ENTER,
     SCENE_EXIT,
     SCENE_PAUSE,
     SCENE_RESUME,
-    SCENE_CUSTOM,
+    Camera,
+    RenderLayer,
+    Scene,
+    scene_manager,
 )
-from apu.events import event_dispatcher
 
 
 class MenuScene(Scene[pygame.Surface]):
@@ -51,7 +49,7 @@ class MenuScene(Scene[pygame.Surface]):
         super().update(dt)
         # Logica del menu (se necessario)
 
-    def render(self, surface: pygame.Surface, camera: Optional[Camera] = None):
+    def render(self, surface: pygame.Surface, camera: Camera | None = None):
         # Sfondo
         surface.fill(self.background_color)
 
@@ -134,7 +132,7 @@ class GameScene(Scene[pygame.Rect]):
             item.x += math.sin(pygame.time.get_ticks() * 0.001) * 2 * dt
             item.y += math.cos(pygame.time.get_ticks() * 0.002) * 1 * dt
 
-    def render(self, surface: pygame.Surface, camera: Optional[Camera] = None):
+    def render(self, surface: pygame.Surface, camera: Camera | None = None):
         super().render(surface, camera)
 
         # Rendi gli elementi per layer
@@ -178,7 +176,7 @@ class SettingsScene(Scene[str]):
     def update(self, dt: float):
         super().update(dt)
 
-    def render(self, surface: pygame.Surface, camera: Optional[Camera] = None):
+    def render(self, surface: pygame.Surface, camera: Camera | None = None):
         surface.fill((30, 30, 50))
 
         # Titolo

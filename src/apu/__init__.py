@@ -1,18 +1,8 @@
-def main() -> None:
-    print("Hello from apu!")
-
 # Esportazioni per il sistema di event dispatcher
-from apu.events import (
-    EventCondition,
-    EventDispatcher,
-    EventHandler,
-    event_dispatcher,
-    get_event_dispatcher,
-)
-
 # Esportazioni per il sistema di scene
+from apu.camera import Camera
+from apu.events import EventDispatcher, EventHandler, event_dispatcher, get_event_dispatcher
 from apu.scene import (
-    Camera,
     RenderLayer,
     Scene,
     SceneManager,
@@ -25,7 +15,6 @@ from apu.scene import (
 
 __all__ = [
     "Camera",
-    "EventCondition",
     "EventDispatcher",
     "EventHandler",
     "RenderLayer",
@@ -39,6 +28,5 @@ __all__ = [
     # Event dispatcher
     "event_dispatcher",
     "get_event_dispatcher",
-    "main",
-    "scene_manager"
+    "scene_manager",
 ]

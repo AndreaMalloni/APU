@@ -45,7 +45,7 @@ class BaseSprite(pygame.sprite.Sprite):
         return self.components.get(component_type.__name__)
 
     def __getattr__(self, name: str) -> Any:
-        # Delegazione: se l'attributo non esiste nell'entità, cerca nei componenti
+        # Delegation: if the attribute doesn't exist in the entity, search in components
         for component in self.components.values():
             if hasattr(component, name):
                 return getattr(component, name)

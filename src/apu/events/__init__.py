@@ -1,5 +1,4 @@
 from apu.events.dispatcher import (
-    EventCondition,
     EventDispatcher,
     EventHandler,
     __EventDispatcher__,
@@ -8,7 +7,6 @@ from apu.events.dispatcher import (
 )
 
 __all__ = [
-    "EventCondition",
     "EventDispatcher",
     "EventHandler",
     "__EventDispatcher__",

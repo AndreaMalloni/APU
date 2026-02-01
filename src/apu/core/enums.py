@@ -1,6 +1,11 @@
-from enum import IntEnum
+from enum import Enum, IntEnum, auto
 
-NEIGHBOUR_MATRIX = [(-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1)]
+__all__ = [
+    "Directions",
+    "EventCondition",
+    "RenderLayer",
+    "SceneState",
+]
 
 
 class Directions(IntEnum):
@@ -8,3 +13,36 @@ class Directions(IntEnum):
     LEFT = 1
     DOWN = 2
     RIGHT = 3
+
+
+class EventCondition(Enum):
+    """Predefined conditions for events"""
+
+    ALWAYS = auto()
+    KEY_PRESSED = auto()
+    KEY_RELEASED = auto()
+    MOUSE_IN_AREA = auto()
+    GAME_STATE_ACTIVE = auto()
+    CUSTOM = auto()
+
+
+class SceneState(Enum):
+    """Possible states of a scene"""
+
+    INACTIVE = auto()
+    LOADING = auto()
+    ACTIVE = auto()
+    PAUSED = auto()
+    TRANSITIONING = auto()
+    UNLOADING = auto()
+
+
+class RenderLayer(Enum):
+    """Predefined rendering layers"""
+
+    BACKGROUND = auto()
+    TERRAIN = auto()
+    DECORATIONS = auto()
+    ENTITIES = auto()
+    UI = auto()
+    OVERLAY = auto()

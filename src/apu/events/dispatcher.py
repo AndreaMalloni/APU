@@ -1,26 +1,17 @@
 from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum, auto
 from typing import Optional
 
 import pygame
 
-__all__ = ["EventCondition", "EventDispatcher", "event_dispatcher"]
+from apu.core.enums import EventCondition
 
-
-class EventCondition(Enum):
-    """Condizioni predefinite per gli eventi"""
-    ALWAYS = auto()
-    KEY_PRESSED = auto()
-    KEY_RELEASED = auto()
-    MOUSE_IN_AREA = auto()
-    GAME_STATE_ACTIVE = auto()
-    CUSTOM = auto()
+__all__ = ["EventDispatcher", "event_dispatcher"]
 
 
 @dataclass
 class EventHandler:
-    """Rappresenta un handler di evento con condizioni e azioni"""
+    """Represents an event handler with conditions and actions"""
     event_type: int
     action: Callable[[pygame.event.Event], None]
     condition: Callable[[pygame.event.Event], bool] | None = None
@@ -31,9 +22,9 @@ class EventHandler:
 
 class EventDispatcher:
     """
-    Sistema avanzato di gestione eventi con supporto per condizioni e azioni specifiche.
-    Gestisce tutti i tipi di eventi pygame, inclusi quelli personalizzati per le scene.
-    Implementato come singleton thread-safe con accesso globale controllato.
+    Advanced event management system with support for specific conditions and actions.
+    Handles all types of pygame events, including custom scene events.
+    Implemented as a thread-safe singleton with controlled global access.
     """
 
     _instance: Optional["EventDispatcher"] = None
@@ -62,15 +53,15 @@ class EventDispatcher:
         enabled: bool = True
     ) -> None:
         """
-        Registra un evento pygame con azione e condizioni specifiche.
+        Registers a pygame event with specific action and conditions.
         
         Args:
-            event_type: Tipo di evento pygame (inclusi eventi personalizzati)
-            action: Funzione da eseguire quando l'evento si verifica
-            condition: Condizione personalizzata (opzionale)
-            condition_type: Tipo di condizione predefinita
-            priority: Priorità dell'handler (più alto = eseguito prima)
-            enabled: Se l'handler è abilitato
+            event_type: Type of pygame event (including custom events)
+            action: Function to execute when the event occurs
+            condition: Custom condition (optional)
+            condition_type: Type of predefined condition
+            priority: Handler priority (higher = executed first)
+            enabled: Whether the handler is enabled
         """
         handler = EventHandler(
             event_type=event_type,
@@ -85,7 +76,7 @@ class EventDispatcher:
             self._handlers[event_type] = []
         
         self._handlers[event_type].append(handler)
-        # Ordina per priorità (più alta prima)
+        # Sort by priority (highest first)
         self._handlers[event_type].sort(key=lambda h: h.priority, reverse=True)
 
     def register_key_event(
@@ -97,19 +88,19 @@ class EventDispatcher:
         priority: int = 0
     ) -> None:
         """
-        Registra un evento specifico per un tasto.
+        Registers a specific event for a key.
         
         Args:
-            key: Codice del tasto pygame
-            action: Azione da eseguire
-            event_type: Tipo di evento (KEYDOWN o KEYUP)
-            condition: Condizione aggiuntiva
-            priority: Priorità dell'handler
+            key: Pygame key code
+            action: Action to execute
+            event_type: Event type (KEYDOWN or KEYUP)
+            condition: Additional condition
+            priority: Handler priority
         """
         def key_condition(event: pygame.event.Event) -> bool:
-            return event.key == key
-        
-        # Combina la condizione del tasto con eventuali condizioni aggiuntive
+            return (event.type == pygame.KEYDOWN and event.key == key)
+
+        # Combine the key condition with any additional conditions
         if condition:
             def combined_condition(event: pygame.event.Event) -> bool:
                 return key_condition(event) and condition(event)
@@ -128,11 +119,11 @@ class EventDispatcher:
 
     def register_global_condition(self, name: str, condition: Callable[[], bool]) -> None:
         """
-        Registra una condizione globale che può essere utilizzata da tutti gli eventi.
+        Registers a global condition that can be used by all events.
         
         Args:
-            name: Nome della condizione
-            condition: Funzione che restituisce True se la condizione è soddisfatta
+            name: Condition name
+            condition: Function that returns True if the condition is satisfied
         """
         self._global_conditions[name] = condition
 
@@ -142,11 +133,11 @@ class EventDispatcher:
         action: Callable[[pygame.event.Event], None]
     ) -> None:
         """
-        Deregistra un evento pygame specifico.
+        Unregisters a specific pygame event.
         
         Args:
-            event_type: Tipo di evento
-            action: Azione da rimuovere
+            event_type: Event type
+            action: Action to remove
         """
         if event_type in self._handlers:
             self._handlers[event_type] = [
@@ -159,7 +150,7 @@ class EventDispatcher:
         event_type: int,
         action: Callable[[pygame.event.Event], None]
     ) -> None:
-        """Abilita un evento pygame specifico."""
+        """Enables a specific pygame event."""
         if event_type in self._handlers:
             for handler in self._handlers[event_type]:
                 if handler.action == action:
@@ -170,7 +161,7 @@ class EventDispatcher:
         event_type: int,
         action: Callable[[pygame.event.Event], None]
     ) -> None:
-        """Disabilita un evento pygame specifico."""
+        """Disables a specific pygame event."""
         if event_type in self._handlers:
             for handler in self._handlers[event_type]:
                 if handler.action == action:
@@ -178,11 +169,11 @@ class EventDispatcher:
 
     def dispatch(self, event: pygame.event.Event) -> None:
         """
-        Invia un evento pygame a tutti gli handler registrati che soddisfano le condizioni.
-        Gestisce tutti i tipi di eventi pygame, inclusi quelli personalizzati per le scene.
+        Dispatches a pygame event to all registered handlers that satisfy the conditions.
+        Handles all types of pygame events, including custom scene events.
         
         Args:
-            event: Evento pygame da processare
+            event: Pygame event to process
         """
         if event.type not in self._handlers:
             return
@@ -191,48 +182,48 @@ class EventDispatcher:
             if not handler.enabled:
                 continue
             
-            # Verifica le condizioni globali
+            # Check global conditions
             if not self._check_global_conditions():
                 continue
             
-            # Verifica le condizioni specifiche dell'handler
+            # Check handler-specific conditions
             if handler.condition and not handler.condition(event):
                 continue
             
-            # Esegui l'azione
+            # Execute the action
             try:
                 handler.action(event)
             except Exception as e:
-                print(f"Errore nell'esecuzione dell'handler per evento {event.type}: {e}")
+                print(f"Error executing handler for event {event.type}: {e}")
 
     def _check_global_conditions(self) -> bool:
-        """Verifica tutte le condizioni globali."""
+        """Checks all global conditions."""
         for condition in self._global_conditions.values():
             try:
                 if not condition():
                     return False
             except Exception as e:
-                print(f"Errore nella verifica della condizione globale: {e}")
+                print(f"Error checking global condition: {e}")
                 return False
         return True
 
     def clear_all_events(self) -> None:
-        """Rimuove tutti gli eventi registrati."""
+        """Removes all registered events."""
         self._handlers.clear()
 
     def get_registered_events(self) -> dict[int, list[EventHandler]]:
-        """Restituisce tutti gli eventi pygame registrati (solo per debug)."""
+        """Returns all registered pygame events (debug only)."""
         return self._handlers.copy()
 
 
-# Istanza globale controllata
+# Controlled global instance
 _event_dispatcher_instance: EventDispatcher | None = None
 
 
 def get_event_dispatcher() -> EventDispatcher:
     """
-    Restituisce l'istanza globale dell'EventDispatcher.
-    Questa è l'unica funzione pubblica per accedere al dispatcher.
+    Returns the global EventDispatcher instance.
+    This is the only public function to access the dispatcher.
     """
     global _event_dispatcher_instance
     if _event_dispatcher_instance is None:
@@ -240,9 +231,9 @@ def get_event_dispatcher() -> EventDispatcher:
     return _event_dispatcher_instance
 
 
-# Alias per comodità
+# Alias for convenience
 event_dispatcher = get_event_dispatcher
 
 
-# Manteniamo la compatibilità con il codice esistente
+# Maintain compatibility with existing code
 __EventDispatcher__ = get_event_dispatcher()

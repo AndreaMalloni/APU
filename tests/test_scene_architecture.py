@@ -1,18 +1,12 @@
-from typing_extensions import override
 from unittest.mock import Mock
 
 import pygame
 import pytest
+from typing_extensions import override
 
-from apu.scene import (
-    Camera,
-    RenderLayer,
-    Scene,
-    SceneManager,
-    SceneNode,
-    SceneState,
-    scene_manager,
-)
+from apu.camera import Camera
+from apu.core.enums import RenderLayer
+from apu.scene import Scene, SceneManager, SceneNode, SceneState, scene_manager
 
 
 class TestSceneNode:
@@ -33,7 +27,7 @@ class TestSceneNode:
                 pass
 
             @override
-            def render(self, surface: pygame.Surface, camera=None) -> None:
+            def render(self, surface: pygame.Surface, camera: Camera | None = None) -> None:
                 pass
 
         node = ConcreteSceneNode("test_node")
@@ -50,7 +44,7 @@ class TestSceneNode:
                 pass
             
             @override
-            def render(self, surface: pygame.Surface, camera=None) -> None:
+            def render(self, surface: pygame.Surface, camera: Camera | None = None) -> None:
                 pass
 
         parent = ConcreteSceneNode("parent")
@@ -72,7 +66,7 @@ class TestSceneNode:
                 pass
 
             @override
-            def render(self, surface: pygame.Surface, camera=None) -> None:
+            def render(self, surface: pygame.Surface, camera: Camera | None = None) -> None:
                 pass
 
         root = ConcreteSceneNode("root")

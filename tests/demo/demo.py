@@ -4,10 +4,11 @@ import sys
 
 import pygame
 
+from apu.camera import Camera
 from apu.collision import HitBox
-from apu.core.enums import Directions
+from apu.core.enums import Directions, EventCondition
 from apu.core.spritesheet import AnimationSequence, SpriteSheet
-from apu.events import EventCondition, event_dispatcher
+from apu.events import event_dispatcher
 import apu.font
 from apu.loading import TiledMapLoader
 from apu.objects.components import AnimationComponent, MovementComponent, SolidBodyComponent
@@ -108,8 +109,11 @@ class Game:
 
         map_sprites = TiledMapLoader().load(self._assets_path + "map.json", self._assets_path)
 
+        # Crea la camera
+        self.camera = Camera(position=(0, 0), zoom=1.0)
+
         # Crea la scena tile-based con la nuova architettura
-        self.tiled_map = TiledScene("main_level", 16)
+        self.tiled_map = TiledScene("main_level", 16, camera=self.camera)
         self.tiled_map.insert(*map_sprites)
 
         self.player = Player(position=(304, 164))
@@ -231,6 +235,15 @@ class Game:
 
             # Aggiorna solo se il gioco non è in pausa
             if not self.game_paused:
+                # Fai seguire la camera al player (centrata sullo schermo)
+                player_center_x = self.player.x + self.player.size[0] / 2
+                player_center_y = self.player.y + self.player.size[1] / 2
+                screen_center_x = self.virtual_display.get_width() / 2
+                screen_center_y = self.virtual_display.get_height() / 2
+                target_x = player_center_x - screen_center_x
+                target_y = player_center_y - screen_center_y
+                self.camera.follow((target_x, target_y), dt)
+                
                 scene_manager().update(dt)
 
             pygame.display.update()

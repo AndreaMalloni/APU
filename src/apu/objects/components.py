@@ -106,7 +106,7 @@ class MovementComponent(BaseComponent):
 
     @override
     def update(self) -> None:
-        # Correzione: Aggiungere un controllo per l'attributo entity
+        # Fix: Add a check for the entity attribute
         if self.is_moving and self.entity is not None:
             x_movement = (self._state[Directions.LEFT][0] - self._state[Directions.RIGHT][0]) * (
                 self.speed + self.acceleration
@@ -194,7 +194,7 @@ class AnimationComponent(BaseComponent):
 
     @override
     def on_added(self) -> None:
-        # Correzione 4: Aggiungere un controllo per l'attributo entity
+        # Fix 4: Add a check for the entity attribute
         if self.entity is not None:
             self.__fallBackImage = self.entity.image
 
@@ -210,7 +210,7 @@ class AnimationComponent(BaseComponent):
 
         if any(self.animations) and self.current_sequence is not None:
             try:
-                # Correzione 5: Aggiungere un controllo per l'attributo entity
+                # Fix 5: Add a check for the entity attribute
                 if self.entity is not None:
                     self.entity.image = self.animations[self.current_sequence].__next__()
             except KeyError:

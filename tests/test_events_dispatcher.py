@@ -3,16 +3,9 @@ from unittest.mock import Mock
 import pygame
 import pytest
 
+from apu.core.const import SCENE_CUSTOM, SCENE_ENTER, SCENE_EXIT, SCENE_PAUSE, SCENE_RESUME
 from apu.events.dispatcher import event_dispatcher
-from apu.scene import (
-    SCENE_CUSTOM,
-    SCENE_ENTER,
-    SCENE_EXIT,
-    SCENE_PAUSE,
-    SCENE_RESUME,
-    Scene,
-    scene_manager,
-)
+from apu.scene import Scene, scene_manager
 
 
 class TestEventDispatcher:
@@ -136,7 +129,7 @@ class TestEventDispatcher:
         mock_handler = Mock()
 
         def custom_condition(event: pygame.event.Event) -> bool:
-            return event.mod & pygame.KMOD_CTRL
+            return (event.type == pygame.KEYDOWN and event.mod & pygame.KMOD_CTRL)
 
         # Registra evento tastiera con condizione
         dispatcher.register_key_event(
