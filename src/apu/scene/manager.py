@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, TypeVar
 
 import pygame
 
@@ -6,6 +6,8 @@ from apu.scene.node import SceneTransition
 from apu.scene.scene import Scene
 
 __all__ = ["SceneManager", "get_scene_manager", "scene_manager"]
+
+T = TypeVar("T")
 
 
 class SceneManager:
@@ -15,14 +17,14 @@ class SceneManager:
     """
 
     def __init__(self) -> None:
-        self._scenes: dict[str, Scene] = {}
-        self._active_scene: Scene | None = None
-        self._scene_stack: list[Scene] = []
+        self._scenes: dict[str, Scene[Any]] = {}
+        self._active_scene: Scene[Any] | None = None
+        self._scene_stack: list[Scene[Any]] = []
         self._transitions: list[SceneTransition] = []
         self._transition_time = 0.0
         self._current_transition: SceneTransition | None = None
 
-    def register_scene(self, scene: Scene) -> None:
+    def register_scene(self, scene: Scene[Any]) -> None:
         """Registers a scene in the manager"""
         self._scenes[scene.name] = scene
 
@@ -50,7 +52,7 @@ class SceneManager:
         self._active_scene = scene
         scene.on_enter(transition_data)
 
-    def pop_scene(self) -> Scene | None:
+    def pop_scene(self) -> Scene[Any] | None:
         """Pops the scene from the top of the stack"""
         if not self._scene_stack:
             return None
@@ -81,7 +83,7 @@ class SceneManager:
         # Clear the stack
         self._scene_stack.clear()
 
-    def get_active_scene(self) -> Scene | None:
+    def get_active_scene(self) -> Scene[Any] | None:
         """Gets the currently active scene"""
         return self._active_scene
 
@@ -110,4 +112,3 @@ def get_scene_manager() -> SceneManager:
 
 # Alias for convenience
 scene_manager = get_scene_manager
-

@@ -56,4 +56,3 @@ class TiledMapLoader(MapLoader):
             True if there's a loader that supports the format, False otherwise
         """
         return any(loader.supports_format(file_path) for loader in self.loaders)
-

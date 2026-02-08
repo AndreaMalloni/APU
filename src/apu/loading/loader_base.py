@@ -34,4 +34,3 @@ class MapLoader(ABC):
         Returns:
             True if the format is supported, False otherwise
         """
-

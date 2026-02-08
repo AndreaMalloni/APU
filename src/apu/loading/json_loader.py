@@ -203,4 +203,3 @@ class JSONMapLoader(MapLoader):
         image = sheet.image_at(pygame.Rect(image_position, (tile_size, tile_size)))
         image.set_colorkey((0, 0, 0))
         return image
-

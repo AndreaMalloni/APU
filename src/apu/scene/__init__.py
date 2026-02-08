@@ -14,4 +14,3 @@ __all__ = [
     "get_scene_manager",
     "scene_manager",
 ]
-

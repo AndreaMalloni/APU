@@ -85,7 +85,7 @@ class BaseSprite(pygame.sprite.Sprite):
             component.draw(window)
 
     @override
-    def update(self) -> None:
+    def update(self, *args: Any, **kwargs: Any) -> None:
         for component in self.components.values():
             component.update()
 

@@ -282,4 +282,3 @@ class TMXMapLoader(MapLoader):
         image = sheet.image_at(pygame.Rect(image_position, (tile_width, tile_height)))
         image.set_colorkey((0, 0, 0))
         return image
-

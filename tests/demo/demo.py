@@ -243,7 +243,7 @@ class Game:
                 target_x = player_center_x - screen_center_x
                 target_y = player_center_y - screen_center_y
                 self.camera.follow((target_x, target_y), dt)
-                
+
                 scene_manager().update(dt)
 
             pygame.display.update()

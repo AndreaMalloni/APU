@@ -62,22 +62,23 @@ def test_json_map_loader_load_basic(monkeypatch: pytest.MonkeyPatch) -> None:
         def image_at(self, rect: pygame.Rect) -> pygame.Surface:
             return pygame.Surface((16, 16))
 
-    import apu.loading as loading
+    from apu.loading import json_loader
 
-    monkeypatch.setattr(loading, "SpriteSheet", DummySpriteSheet)
+    monkeypatch.setattr(json_loader, "SpriteSheet", DummySpriteSheet)
 
     fake_json = {
         "tileheight": 16,
         "width": 1,
         "layers": [{"type": "tilelayer", "data": [1]}],
-        "tilesets": [{"image": "tiles.png", "firstgid": 1}],
+        "tilesets": [{"image": "tileset.png", "firstgid": 1}],
     }
     monkeypatch.setattr("pathlib.Path.open", lambda *a, **k: io.StringIO(json.dumps(fake_json)))
 
     mock_sprite = MagicMock(spec=BaseSprite)
-    monkeypatch.setattr(loading, "BaseSprite", MagicMock(return_value=mock_sprite))
 
-    loader = loading.JSONMapLoader()
+    monkeypatch.setattr(json_loader, "BaseSprite", MagicMock(return_value=mock_sprite))
+
+    loader = JSONMapLoader()
     sprites = loader.load("map.json", "assets/")
     assert len(sprites) == 1
     mock_sprite.add_component.assert_not_called()
@@ -91,14 +92,14 @@ def test_tmx_map_loader_load_basic(monkeypatch: pytest.MonkeyPatch) -> None:
         def image_at(self, rect: pygame.Rect) -> pygame.Surface:
             return pygame.Surface((16, 16))
 
-    import apu.loading as loading
+    from apu.loading import tmx_loader
 
-    monkeypatch.setattr(loading, "SpriteSheet", DummySpriteSheet)
+    monkeypatch.setattr(tmx_loader, "SpriteSheet", DummySpriteSheet)
 
     # Fake TMX XML
     root = ET.Element("map", tilewidth="16", tileheight="16", width="1")
     tileset = ET.SubElement(root, "tileset", firstgid="1")
-    ET.SubElement(tileset, "image", source="tiles.png")
+    ET.SubElement(tileset, "image", source="tileset.png")
     layer = ET.SubElement(root, "layer")
     data = ET.SubElement(layer, "data", encoding="csv")
     data.text = "1"
@@ -106,9 +107,10 @@ def test_tmx_map_loader_load_basic(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(ET, "parse", lambda _: ET.ElementTree(ET.fromstring(tmx_str)))
 
     mock_sprite = MagicMock(spec=BaseSprite)
-    monkeypatch.setattr(loading, "BaseSprite", MagicMock(return_value=mock_sprite))
 
-    loader = loading.TMXMapLoader()
+    monkeypatch.setattr(tmx_loader, "BaseSprite", MagicMock(return_value=mock_sprite))
+
+    loader = TMXMapLoader()
     sprites = loader.load("map.tmx", "assets/")
     assert len(sprites) == 1
     mock_sprite.add_component.assert_not_called()
@@ -123,9 +125,9 @@ def test_json_map_loader_load_with_hitbox(monkeypatch: pytest.MonkeyPatch) -> No
         def image_at(self, rect: pygame.Rect) -> pygame.Surface:
             return pygame.Surface((16, 16))
 
-    import apu.loading as loading
+    from apu.loading import json_loader
 
-    monkeypatch.setattr(loading, "SpriteSheet", DummySpriteSheet)
+    monkeypatch.setattr(json_loader, "SpriteSheet", DummySpriteSheet)
 
     fake_json = {
         "tileheight": 16,
@@ -133,7 +135,7 @@ def test_json_map_loader_load_with_hitbox(monkeypatch: pytest.MonkeyPatch) -> No
         "layers": [{"type": "tilelayer", "data": [1]}],
         "tilesets": [
             {
-                "image": "tiles.png",
+                "image": "tileset.png",
                 "firstgid": 1,
                 "tiles": [
                     {
@@ -147,9 +149,10 @@ def test_json_map_loader_load_with_hitbox(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr("pathlib.Path.open", lambda *a, **k: io.StringIO(json.dumps(fake_json)))
 
     mock_sprite = MagicMock(spec=BaseSprite)
-    monkeypatch.setattr(loading, "BaseSprite", MagicMock(return_value=mock_sprite))
 
-    loader = loading.JSONMapLoader()
+    monkeypatch.setattr(json_loader, "BaseSprite", MagicMock(return_value=mock_sprite))
+
+    loader = JSONMapLoader()
     sprites = loader.load("map.json", "assets/")
     assert len(sprites) == 1
     mock_sprite.add_component.assert_called_once()
@@ -164,13 +167,13 @@ def test_tmx_map_loader_load_with_hitbox(monkeypatch: pytest.MonkeyPatch) -> Non
         def image_at(self, rect: pygame.Rect) -> pygame.Surface:
             return pygame.Surface((16, 16))
 
-    import apu.loading as loading
+    from apu.loading import tmx_loader
 
-    monkeypatch.setattr(loading, "SpriteSheet", DummySpriteSheet)
+    monkeypatch.setattr(tmx_loader, "SpriteSheet", DummySpriteSheet)
 
     root = ET.Element("map", tilewidth="16", tileheight="16", width="1")
     tileset = ET.SubElement(root, "tileset", firstgid="1")
-    ET.SubElement(tileset, "image", source="tiles.png")
+    ET.SubElement(tileset, "image", source="tileset.png")
     tile_with_obj = ET.SubElement(tileset, "tile", id="0")
     obj_group = ET.SubElement(tile_with_obj, "objectgroup")
     ET.SubElement(obj_group, "object", x="0", y="0", width="16", height="16")
@@ -181,9 +184,10 @@ def test_tmx_map_loader_load_with_hitbox(monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.setattr(ET, "parse", lambda _: ET.ElementTree(ET.fromstring(tmx_str)))
 
     mock_sprite = MagicMock(spec=BaseSprite)
-    monkeypatch.setattr(loading, "BaseSprite", MagicMock(return_value=mock_sprite))
 
-    loader = loading.TMXMapLoader()
+    monkeypatch.setattr(tmx_loader, "BaseSprite", MagicMock(return_value=mock_sprite))
+
+    loader = TMXMapLoader()
     sprites = loader.load("map.tmx", "assets/")
     assert len(sprites) == 1
     mock_sprite.add_component.assert_called_once()
@@ -198,9 +202,9 @@ def test_json_map_loader_load_with_animation(monkeypatch: pytest.MonkeyPatch) ->
         def image_at(self, rect: pygame.Rect) -> pygame.Surface:
             return pygame.Surface((16, 16))
 
-    import apu.loading as loading
+    from apu.loading import json_loader
 
-    monkeypatch.setattr(loading, "SpriteSheet", DummySpriteSheet)
+    monkeypatch.setattr(json_loader, "SpriteSheet", DummySpriteSheet)
 
     fake_json = {
         "tileheight": 16,
@@ -208,7 +212,7 @@ def test_json_map_loader_load_with_animation(monkeypatch: pytest.MonkeyPatch) ->
         "layers": [{"type": "tilelayer", "data": [1]}],
         "tilesets": [
             {
-                "image": "tiles.png",
+                "image": "tileset.png",
                 "firstgid": 1,
                 "tilewidth": 16,
                 "tiles": [
@@ -226,9 +230,10 @@ def test_json_map_loader_load_with_animation(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setattr("pathlib.Path.open", lambda *a, **k: io.StringIO(json.dumps(fake_json)))
 
     mock_sprite = MagicMock(spec=BaseSprite)
-    monkeypatch.setattr(loading, "BaseSprite", MagicMock(return_value=mock_sprite))
 
-    loader = loading.JSONMapLoader()
+    monkeypatch.setattr(json_loader, "BaseSprite", MagicMock(return_value=mock_sprite))
+
+    loader = JSONMapLoader()
     sprites = loader.load("map.json", "assets/")
     assert len(sprites) == 1
     mock_sprite.add_component.assert_called_once()
@@ -243,13 +248,13 @@ def test_tmx_map_loader_load_with_animation(monkeypatch: pytest.MonkeyPatch) -> 
         def image_at(self, rect: pygame.Rect) -> pygame.Surface:
             return pygame.Surface((16, 16))
 
-    import apu.loading as loading
+    from apu.loading import tmx_loader
 
-    monkeypatch.setattr(loading, "SpriteSheet", DummySpriteSheet)
+    monkeypatch.setattr(tmx_loader, "SpriteSheet", DummySpriteSheet)
 
     root = ET.Element("map", tilewidth="16", tileheight="16", width="1")
     tileset = ET.SubElement(root, "tileset", firstgid="1")
-    ET.SubElement(tileset, "image", source="tiles.png")
+    ET.SubElement(tileset, "image", source="tileset.png")
     tile_with_anim = ET.SubElement(tileset, "tile", id="0")
     animation = ET.SubElement(tile_with_anim, "animation")
     ET.SubElement(animation, "frame", tileid="0", duration="100")
@@ -261,9 +266,10 @@ def test_tmx_map_loader_load_with_animation(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(ET, "parse", lambda _: ET.ElementTree(ET.fromstring(tmx_str)))
 
     mock_sprite = MagicMock(spec=BaseSprite)
-    monkeypatch.setattr(loading, "BaseSprite", MagicMock(return_value=mock_sprite))
 
-    loader = loading.TMXMapLoader()
+    monkeypatch.setattr(tmx_loader, "BaseSprite", MagicMock(return_value=mock_sprite))
+
+    loader = TMXMapLoader()
     sprites = loader.load("map.tmx", "assets/")
     assert len(sprites) == 1
     mock_sprite.add_component.assert_called_once()

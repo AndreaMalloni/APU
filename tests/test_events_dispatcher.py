@@ -129,12 +129,16 @@ class TestEventDispatcher:
         mock_handler = Mock()
 
         def custom_condition(event: pygame.event.Event) -> bool:
-            return (event.type == pygame.KEYDOWN and event.mod & pygame.KMOD_CTRL)
+            if event.type != pygame.KEYDOWN:
+                return False
+            # Type narrowing: at this point we know event.type == pygame.KEYDOWN
+            if not hasattr(event, "mod"):
+                return False
+            mod_attr = getattr(event, "mod", 0)
+            return bool(mod_attr & pygame.KMOD_CTRL)
 
         # Registra evento tastiera con condizione
-        dispatcher.register_key_event(
-            pygame.K_SPACE, mock_handler, condition=custom_condition
-        )
+        dispatcher.register_key_event(pygame.K_SPACE, mock_handler, condition=custom_condition)
 
         # Emette evento senza CTRL - non dovrebbe chiamare l'handler
         event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE)
@@ -142,9 +146,7 @@ class TestEventDispatcher:
         mock_handler.assert_not_called()
 
         # Emette evento con CTRL - dovrebbe chiamare l'handler
-        event = pygame.event.Event(
-            pygame.KEYDOWN, key=pygame.K_SPACE, mod=pygame.KMOD_CTRL
-        )
+        event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE, mod=pygame.KMOD_CTRL)
         dispatcher.dispatch(event)
         mock_handler.assert_called_once_with(event)
 

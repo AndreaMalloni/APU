@@ -86,4 +86,3 @@ class SceneNode(ABC):
     @abstractmethod
     def render(self, surface: pygame.Surface, camera: Camera | None = None) -> None:
         """Renders the node"""
-

@@ -12,6 +12,7 @@ __all__ = ["EventDispatcher", "event_dispatcher"]
 @dataclass
 class EventHandler:
     """Represents an event handler with conditions and actions"""
+
     event_type: int
     action: Callable[[pygame.event.Event], None]
     condition: Callable[[pygame.event.Event], bool] | None = None
@@ -50,11 +51,11 @@ class EventDispatcher:
         condition: Callable[[pygame.event.Event], bool] | None = None,
         condition_type: EventCondition = EventCondition.ALWAYS,
         priority: int = 0,
-        enabled: bool = True
+        enabled: bool = True,
     ) -> None:
         """
         Registers a pygame event with specific action and conditions.
-        
+
         Args:
             event_type: Type of pygame event (including custom events)
             action: Function to execute when the event occurs
@@ -69,12 +70,12 @@ class EventDispatcher:
             condition=condition,
             condition_type=condition_type,
             priority=priority,
-            enabled=enabled
+            enabled=enabled,
         )
-        
+
         if event_type not in self._handlers:
             self._handlers[event_type] = []
-        
+
         self._handlers[event_type].append(handler)
         # Sort by priority (highest first)
         self._handlers[event_type].sort(key=lambda h: h.priority, reverse=True)
@@ -85,11 +86,11 @@ class EventDispatcher:
         action: Callable[[pygame.event.Event], None],
         event_type: int = pygame.KEYDOWN,
         condition: Callable[[pygame.event.Event], bool] | None = None,
-        priority: int = 0
+        priority: int = 0,
     ) -> None:
         """
         Registers a specific event for a key.
-        
+
         Args:
             key: Pygame key code
             action: Action to execute
@@ -97,30 +98,44 @@ class EventDispatcher:
             condition: Additional condition
             priority: Handler priority
         """
+
         def key_condition(event: pygame.event.Event) -> bool:
-            return (event.type == pygame.KEYDOWN and event.key == key)
+            if event.type != pygame.KEYDOWN:
+                return False
+
+            if not hasattr(event, "key"):
+                return False
+
+            key_attr = getattr(event, "key", None)
+            if key_attr is None:
+                return False
+
+            return bool(key_attr == key)
 
         # Combine the key condition with any additional conditions
         if condition:
+
             def combined_condition(event: pygame.event.Event) -> bool:
                 return key_condition(event) and condition(event)
+
             final_condition = combined_condition
         else:
             final_condition = key_condition
-        
+
         self.register_event(
             event_type=event_type,
             action=action,
             condition=final_condition,
-            condition_type=EventCondition.KEY_PRESSED 
-                if event_type == pygame.KEYDOWN else EventCondition.KEY_RELEASED,
-            priority=priority
+            condition_type=EventCondition.KEY_PRESSED
+            if event_type == pygame.KEYDOWN
+            else EventCondition.KEY_RELEASED,
+            priority=priority,
         )
 
     def register_global_condition(self, name: str, condition: Callable[[], bool]) -> None:
         """
         Registers a global condition that can be used by all events.
-        
+
         Args:
             name: Condition name
             condition: Function that returns True if the condition is satisfied
@@ -128,39 +143,28 @@ class EventDispatcher:
         self._global_conditions[name] = condition
 
     def unregister_event(
-        self,
-        event_type: int,
-        action: Callable[[pygame.event.Event], None]
+        self, event_type: int, action: Callable[[pygame.event.Event], None]
     ) -> None:
         """
         Unregisters a specific pygame event.
-        
+
         Args:
             event_type: Event type
             action: Action to remove
         """
         if event_type in self._handlers:
             self._handlers[event_type] = [
-                handler for handler in self._handlers[event_type]
-                if handler.action != action
+                handler for handler in self._handlers[event_type] if handler.action != action
             ]
 
-    def enable_event(
-        self,
-        event_type: int,
-        action: Callable[[pygame.event.Event], None]
-    ) -> None:
+    def enable_event(self, event_type: int, action: Callable[[pygame.event.Event], None]) -> None:
         """Enables a specific pygame event."""
         if event_type in self._handlers:
             for handler in self._handlers[event_type]:
                 if handler.action == action:
                     handler.enabled = True
 
-    def disable_event(
-        self,
-        event_type: int,
-        action: Callable[[pygame.event.Event], None]
-    ) -> None:
+    def disable_event(self, event_type: int, action: Callable[[pygame.event.Event], None]) -> None:
         """Disables a specific pygame event."""
         if event_type in self._handlers:
             for handler in self._handlers[event_type]:
@@ -171,25 +175,25 @@ class EventDispatcher:
         """
         Dispatches a pygame event to all registered handlers that satisfy the conditions.
         Handles all types of pygame events, including custom scene events.
-        
+
         Args:
             event: Pygame event to process
         """
         if event.type not in self._handlers:
             return
-        
+
         for handler in self._handlers[event.type]:
             if not handler.enabled:
                 continue
-            
+
             # Check global conditions
             if not self._check_global_conditions():
                 continue
-            
+
             # Check handler-specific conditions
             if handler.condition and not handler.condition(event):
                 continue
-            
+
             # Execute the action
             try:
                 handler.action(event)

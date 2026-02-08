@@ -20,6 +20,7 @@ class TestSceneNode:
 
     def test_scene_node_creation(self) -> None:
         """Test creazione di un nodo scena"""
+
         # Creiamo una classe concreta per testare SceneNode
         class ConcreteSceneNode(SceneNode):
             @override
@@ -38,11 +39,12 @@ class TestSceneNode:
 
     def test_scene_node_hierarchy(self) -> None:
         """Test gerarchia di nodi"""
+
         class ConcreteSceneNode(SceneNode):
             @override
             def update(self, dt: float) -> None:
                 pass
-            
+
             @override
             def render(self, surface: pygame.Surface, camera: Camera | None = None) -> None:
                 pass
@@ -60,6 +62,7 @@ class TestSceneNode:
 
     def test_scene_node_find(self) -> None:
         """Test ricerca di nodi nella gerarchia"""
+
         class ConcreteSceneNode(SceneNode):
             @override
             def update(self, dt: float) -> None:
@@ -145,7 +148,7 @@ class TestScene:
         assert scene.state == SceneState.INACTIVE
 
         scene.on_enter({"level": 1})
-        assert scene.state == SceneState.ACTIVE
+        assert scene.state == SceneState.ACTIVE  # type: ignore[comparison-overlap]
 
         scene.on_pause()
         assert scene.state == SceneState.PAUSED
@@ -241,7 +244,7 @@ class TestSceneManager:
 
         manager.switch_scene("scene2")
         assert manager.get_active_scene() == scene2
-        assert scene1.state == SceneState.INACTIVE
+        assert scene1.state == SceneState.INACTIVE  # type: ignore[comparison-overlap]
         assert scene2.state == SceneState.ACTIVE
 
     def test_scene_stack(self) -> None:
@@ -267,7 +270,7 @@ class TestSceneManager:
         popped = manager.pop_scene()
         assert popped == scene1
         assert manager.get_active_scene() == scene1
-        assert scene1.state == SceneState.ACTIVE
+        assert scene1.state == SceneState.ACTIVE  # type: ignore[comparison-overlap]
         assert len(manager._scene_stack) == 0
 
     def test_scene_unregister(self) -> None:
@@ -397,7 +400,7 @@ class TestSceneState:
         assert scene.state == SceneState.ACTIVE
 
         scene.on_pause()
-        assert scene.state == SceneState.PAUSED
+        assert scene.state == SceneState.PAUSED  # type: ignore[comparison-overlap]
 
         scene.on_resume()
         assert scene.state == SceneState.ACTIVE

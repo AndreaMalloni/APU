@@ -25,4 +25,3 @@ SCENE_EVENT_TYPES = {
     "scene_resume": SCENE_RESUME,
     "scene_custom": SCENE_CUSTOM,
 }
-
